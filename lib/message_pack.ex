@@ -1,0 +1,2 @@
+defmodule MessagePack do
+end
