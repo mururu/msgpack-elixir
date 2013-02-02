@@ -2,8 +2,8 @@ defmodule MessagePack do
   defdelegate pack(term),     to: MessagePack.Packer
 
   def unpack(binary, options // []) do
-    if options[:rest] do
-      MessagePack.Unpacker.unpack_rest(binary)
+    if options[:all] do
+      MessagePack.Unpacker.unpack_all(binary)
     else
       MessagePack.Unpacker.unpack(binary)
     end
@@ -105,8 +105,19 @@ defmodule MessagePack.Unpacker do
     end
   end
 
-  def unpack_rest(binary) when is_binary(binary) do
-    do_unpack(binary)
+  def unpack_all(binary) when is_binary(binary) do
+    do_unpack_all(binary, []) |> Enum.reverse
+  end
+
+  def do_unpack_all(binary, acc) do
+    case do_unpack(binary) do
+      { term, <<>> } ->
+        [term|acc]
+      { _, rest } when byte_size(binary) == byte_size(rest) ->
+        raise "unpack failed"
+      { term, rest } when is_binary(binary) ->
+        do_unpack_all(rest, [term|acc])
+    end
   end
 
   #atom

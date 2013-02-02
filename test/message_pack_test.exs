@@ -34,4 +34,8 @@ defmodule MessagePackTest do
   test "nil" do
     check(nil)
   end
+
+  test "unpack_all" do
+    assert MessagePack.unpack(<<1, 2>>, all: true) == [1, 2]
+  end
 end
