@@ -1,5 +1,5 @@
 defmodule MessagePack do
-  defdelegate pack(term),     to: MessagePack.Packer
+  defdelegate pack(term), to: MessagePack.Packer
 
   def unpack(binary, options // []) do
     if options[:all] do
@@ -51,9 +51,9 @@ defimpl MessagePack.Packer, for: List do
       len when len < 16 ->
         << 0b1001 :: size(4), len :: [size(4), integer, unit(1)], (pack_array(list)) :: binary >>
       len when len < 0x10000 ->
-        << 0xDC :: size(8),   len :: [size(16), big, unsigned, integer, unit(1)], (pack_array(list)) :: binary >>
+        << 0xDC :: size(8), len :: [size(16), big, unsigned, integer, unit(1)], (pack_array(list)) :: binary >>
       len ->
-        << 0xDD :: size(8),   len :: [size(32), big, unsigned, integer, unit(1)], (pack_array(list)) :: binary >>
+        << 0xDD :: size(8), len :: [size(32), big, unsigned, integer, unit(1)], (pack_array(list)) :: binary >>
     end
   end
 
@@ -143,34 +143,34 @@ defmodule MessagePack.Unpacker do
   defp do_unpack(<< 0xCB, float :: [size(64), float, unit(1)], rest :: binary >>), do: { float, rest }
 
   # unsigned integer
+  defp do_unpack(<< 0 :: size(1), v :: size(7), rest :: binary >>), do: { v, rest }
   defp do_unpack(<< 0xCC, uint :: [size(8), unsigned, integer], rest :: binary >>), do: { uint, rest }
   defp do_unpack(<< 0xCD, uint :: [size(16), big, unsigned, integer, unit(1)], rest :: binary >>), do: { uint, rest }
   defp do_unpack(<< 0xCE, uint :: [size(32), big, unsigned, integer, unit(1)], rest :: binary >>), do: { uint, rest }
   defp do_unpack(<< 0xCF, uint :: [size(64), big, unsigned, integer, unit(1)], rest :: binary >>), do: { uint, rest }
 
   # signed integer
+  defp do_unpack(<< 0b111 :: size(3), v :: size(5), rest :: binary >>), do: { v - 0b100000, rest }
   defp do_unpack(<< 0xD0, int :: [size(8), signed, integer], rest :: binary >>), do: { int, rest }
   defp do_unpack(<< 0xD1, int :: [size(16), big, signed, integer, unit(1)], rest :: binary >>), do: { int, rest }
   defp do_unpack(<< 0xD2, int :: [size(32), big, signed, integer, unit(1)], rest :: binary >>), do: { int, rest }
   defp do_unpack(<< 0xD3, int :: [size(64), big, signed, integer, unit(1)], rest :: binary >>), do: { int, rest }
 
   # binary
+  defp do_unpack(<< 0b101 :: size(3), len :: size(5), v :: [size(len), binary], rest :: binary >>), do: { v, rest }
   defp do_unpack(<< 0xDA, binary :: [size(16), unsigned, integer, unit(1)], rest :: binary >>), do: { binary, rest }
   defp do_unpack(<< 0xDB, binary :: [size(32), unsigned, integer, unit(1)], rest :: binary >>), do: { binary, rest }
 
   # array
+  defp do_unpack(<< 0b1001 :: size(4), len :: size(4), rest :: binary >>), do: unpack_array(rest, len)
   defp do_unpack(<< 0xDC, len :: [size(16), big, unsigned, integer, unit(1)], rest :: binary >>), do: unpack_array(rest, len)
   defp do_unpack(<< 0xDD, len :: [size(32), big, unsigned, integer, unit(1)], rest :: binary >>), do: unpack_array(rest, len)
 
   # map
+  defp do_unpack(<< 0b1000 :: size(4), len :: size(4), rest :: binary >>), do: unpack_map(rest, len)
   defp do_unpack(<< 0xDE, len :: [size(16), big, unsigned, integer, unit(1)], rest :: binary >>), do: unpack_map(rest, len)
   defp do_unpack(<< 0xDF, len :: [size(32), big, unsigned, integer, unit(1)], rest :: binary >>), do: unpack_map(rest, len)
 
-  defp do_unpack(<< 0 :: size(1), v :: size(7), rest :: binary >>), do: { v, rest }
-  defp do_unpack(<< 0b111 :: size(3), v :: size(5), rest :: binary >>), do: { v - 0b100000, rest }
-  defp do_unpack(<< 0b101 :: size(3), len :: size(5), v :: [size(len), binary], rest :: binary >>), do: { v, rest }
-  defp do_unpack(<< 0b1001 :: size(4), len :: size(4), rest :: binary >>), do: unpack_array(rest, len)
-  defp do_unpack(<< 0b1000 :: size(4), len :: size(4), rest :: binary >>), do: unpack_map(rest, len)
 
   defp unpack_array(binary, len) do
     do_unpack_array(binary, len, [])
@@ -179,6 +179,7 @@ defmodule MessagePack.Unpacker do
   defp do_unpack_array(rest, 0, acc) do
     { :lists.reverse(acc), rest }
   end
+
   defp do_unpack_array(binary, len, acc) do
     case do_unpack(binary) do
       { term, rest } ->
@@ -195,6 +196,7 @@ defmodule MessagePack.Unpacker do
   defp do_unpack_map(rest, 0, acc) do
     { {:lists.reverse(acc)}, rest }
   end
+
   defp do_unpack_map(binary, len, acc) do
     { key, rest } = do_unpack(binary)
     { value, rest } = do_unpack(rest)
