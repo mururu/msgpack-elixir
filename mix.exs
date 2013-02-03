@@ -4,12 +4,18 @@ defmodule MessagePack.Mixfile do
   def project do
     [ app: :message_pack,
       version: "0.0.1",
-      deps: deps ]
+      deps: deps,
+      env:
+        [test: [deps: test_deps]] ]
   end
 
   # Configuration for the OTP application
   def application do
     []
+  end
+
+  defp test_deps do
+    [{ :jiffy, github: "davisp/jiffy" }]
   end
 
   # Returns the list of dependencies in the format:

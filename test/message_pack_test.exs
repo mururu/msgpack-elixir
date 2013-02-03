@@ -53,13 +53,47 @@ defmodule MessagePackTest do
     end
   end
 
-  test "invalid prefix" do
-    assert_raise MessagePack.InvalidPrefixError, "Invalid prefix: #{inspect 0xc1}", fn->
-      MessagePack.unpack(<< 0xC1 >>)
+  def check_invalid_prefix(prefix) do
+    assert_raise MessagePack.InvalidPrefixError, "Invalid prefix: #{inspect prefix}", fn->
+      MessagePack.unpack(<< prefix >>)
     end
+  end
+
+  test "invalid prefix" do
+    [0xC1, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9,
+     0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9] |> Enum.each check_invalid_prefix(&1)
   end
 
   test "unpack_stream" do
     assert MessagePack.unpack_stream(<<1, 2>>) == { 1, <<2>> }
+  end
+
+
+  def unpack_all(binary) do
+    do_unpack_all(binary, []) |> Enum.reverse
+  end
+
+  def do_unpack_all(<<>>, acc) do
+    acc
+  end
+  def do_unpack_all(binary, acc) do
+    {term, rest} = MessagePack.unpack_stream(binary)
+    do_unpack_all(rest, [term|acc])
+  end
+
+  def nillify(term) do
+    case term do
+      :null -> nil
+      other -> other
+    end
+  end
+
+  test "compare with json" do
+    from_msg  = Path.expand("../cases.msg", __FILE__)  |> File.read! |> unpack_all
+    from_json = Path.expand("../cases.json", __FILE__) |> File.read! |> :jiffy.decode |> Enum.map nillify(&1)
+
+    Enum.zip(from_msg, from_json) |> Enum.each fn({term1, term2})->
+      assert term1 == term2
+    end
   end
 end
