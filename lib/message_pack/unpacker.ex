@@ -4,19 +4,12 @@ defmodule MessagePack.Unpacker do
       { result, <<>> } ->
         result
       { result, rest } when is_binary(rest) ->
-        raise "extra bytes follow after a deserialized object"
-      _ ->
-        raise "unpack error"
+        raise MessagePack.ExtraBytesError, bytes: rest
     end
   end
 
   def unpack_rest(binary) when is_binary(binary) do
-    case do_unpack(binary) do
-      result = { _, rest } when is_binary(rest) ->
-        result
-      _ ->
-        raise "unpack error"
-    end
+    do_unpack(binary)
   end
 
   def unpack_all(binary) when is_binary(binary) do
@@ -27,8 +20,6 @@ defmodule MessagePack.Unpacker do
     case do_unpack(binary) do
       { term, <<>> } ->
         [term|acc]
-      { _, rest } when byte_size(binary) == byte_size(rest) ->
-        raise "unpack failed"
       { term, rest } when is_binary(binary) ->
         do_unpack_all(rest, [term|acc])
     end
@@ -78,6 +69,14 @@ defmodule MessagePack.Unpacker do
   defp do_unpack(<< 0xDE, len :: [size(16), big, unsigned, integer, unit(1)], rest :: binary >>), do: unpack_map(rest, len)
   defp do_unpack(<< 0xDF, len :: [size(32), big, unsigned, integer, unit(1)], rest :: binary >>), do: unpack_map(rest, len)
 
+  @invalid_prefixes [0xC1, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9]
+  defp do_unpack(<< prefix, _ :: binary>>) when prefix in @invalid_prefixes do
+    raise MessagePack.InvalidPrefixError, prefix: prefix
+  end
+
+  defp do_unpack(data) do
+    raise MessagePack.IncompleteDataError, data: data
+  end
 
   defp unpack_array(binary, len) do
     do_unpack_array(binary, len, [])
@@ -88,12 +87,8 @@ defmodule MessagePack.Unpacker do
   end
 
   defp do_unpack_array(binary, len, acc) do
-    case do_unpack(binary) do
-      { term, rest } ->
-        do_unpack_array(rest, len - 1, [term|acc])
-      _ ->
-        raise "do_unpack_array error"
-    end
+    { term, rest } = do_unpack(binary)
+    { term, rest } = do_unpack_array(rest, len - 1, [term|acc])
   end
 
   defp unpack_map(binary, len) do

@@ -41,6 +41,24 @@ defmodule MessagePackTest do
     end
   end
 
+  test "extra bytes error" do
+    assert_raise MessagePack.ExtraBytesError, "Extra bytes follow after a deserialized object.\nExtra bytes: #{inspect << 2 >>}", fn->
+      MessagePack.unpack(<< 1, 2 >>)
+    end
+  end
+
+  test "incomplete data error" do
+    assert_raise MessagePack.IncompleteDataError, "Incomplete data: #{ inspect <<>> }", fn->
+      MessagePack.unpack(<<>>)
+    end
+  end
+
+  test "invalid prefix" do
+    assert_raise MessagePack.InvalidPrefixError, "Invalid prefix: #{inspect 0xc1}", fn->
+      MessagePack.unpack(<< 0xC1 >>)
+    end
+  end
+
   test "unpack_all" do
     assert MessagePack.unpack(<<1, 2>>, all: true) == [1, 2]
   end
