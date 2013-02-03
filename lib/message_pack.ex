@@ -1,13 +1,8 @@
 defmodule MessagePack do
   defdelegate pack(term), to: MessagePack.Packer
 
-  def unpack(binary, options // []) do
-    if options[:stream] do
-      MessagePack.Unpacker.unpack_stream(binary)
-    else
-      MessagePack.Unpacker.unpack(binary)
-    end
-  end
+  defdelegate unpack(binary), to: MessagePack.Unpacker
+  defdelegate unpack_stream(binary), to: MessagePack.Unpacker
 
   defexception IncompleteDataError, data: nil do
     def message(exception) do

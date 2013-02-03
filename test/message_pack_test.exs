@@ -60,6 +60,6 @@ defmodule MessagePackTest do
   end
 
   test "unpack_stream" do
-    assert MessagePack.unpack(<<1, 2>>, stream: true) == { 1, <<2>> }
+    assert MessagePack.unpack_stream(<<1, 2>>) == { 1, <<2>> }
   end
 end
