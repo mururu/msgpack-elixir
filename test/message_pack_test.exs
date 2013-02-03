@@ -59,7 +59,7 @@ defmodule MessagePackTest do
     end
   end
 
-  test "unpack_rest" do
-    assert MessagePack.unpack(<<1, 2>>, rest: true) == { 1, <<2>>}
+  test "unpack_stream" do
+    assert MessagePack.unpack(<<1, 2>>, stream: true) == { 1, <<2>> }
   end
 end

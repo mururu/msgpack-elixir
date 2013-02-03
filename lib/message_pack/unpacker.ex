@@ -8,7 +8,7 @@ defmodule MessagePack.Unpacker do
     end
   end
 
-  def unpack_rest(binary) when is_binary(binary) do
+  def unpack_stream(binary) when is_binary(binary) do
     do_unpack(binary)
   end
 

@@ -2,8 +2,8 @@ defmodule MessagePack do
   defdelegate pack(term), to: MessagePack.Packer
 
   def unpack(binary, options // []) do
-    if options[:rest] do
-      MessagePack.Unpacker.unpack_rest(binary)
+    if options[:stream] do
+      MessagePack.Unpacker.unpack_stream(binary)
     else
       MessagePack.Unpacker.unpack(binary)
     end
