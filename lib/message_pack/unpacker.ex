@@ -34,30 +34,36 @@ defmodule MessagePack.Unpacker do
     end
   end
 
-  #atom
-  defp do_unpack(<< 0xC0, rest :: binary >>), do: { nil, rest }
-  defp do_unpack(<< 0xC2, rest :: binary >>), do: { false, rest }
-  defp do_unpack(<< 0xC3, rest :: binary >>), do: { true, rest }
-
-  #float
-  defp do_unpack(<< 0xCA, float :: [size(32), float, unit(1)], rest :: binary >>), do: { float, rest }
-  defp do_unpack(<< 0xCB, float :: [size(64), float, unit(1)], rest :: binary >>), do: { float, rest }
-
-  # unsigned integer
+  # positive fixnum
   defp do_unpack(<< 0 :: size(1), v :: size(7), rest :: binary >>), do: { v, rest }
+
+  #negative fixnum
+  defp do_unpack(<< 0b111 :: size(3), v :: size(5), rest :: binary >>), do: { v - 0b100000, rest }
+
+  # uint
   defp do_unpack(<< 0xCC, uint :: [size(8), unsigned, integer], rest :: binary >>), do: { uint, rest }
   defp do_unpack(<< 0xCD, uint :: [size(16), big, unsigned, integer, unit(1)], rest :: binary >>), do: { uint, rest }
   defp do_unpack(<< 0xCE, uint :: [size(32), big, unsigned, integer, unit(1)], rest :: binary >>), do: { uint, rest }
   defp do_unpack(<< 0xCF, uint :: [size(64), big, unsigned, integer, unit(1)], rest :: binary >>), do: { uint, rest }
 
-  # signed integer
-  defp do_unpack(<< 0b111 :: size(3), v :: size(5), rest :: binary >>), do: { v - 0b100000, rest }
+  # int
   defp do_unpack(<< 0xD0, int :: [size(8), signed, integer], rest :: binary >>), do: { int, rest }
   defp do_unpack(<< 0xD1, int :: [size(16), big, signed, integer, unit(1)], rest :: binary >>), do: { int, rest }
   defp do_unpack(<< 0xD2, int :: [size(32), big, signed, integer, unit(1)], rest :: binary >>), do: { int, rest }
   defp do_unpack(<< 0xD3, int :: [size(64), big, signed, integer, unit(1)], rest :: binary >>), do: { int, rest }
 
-  # binary
+  # nil
+  defp do_unpack(<< 0xC0, rest :: binary >>), do: { nil, rest }
+
+  # boolean
+  defp do_unpack(<< 0xC3, rest :: binary >>), do: { true, rest }
+  defp do_unpack(<< 0xC2, rest :: binary >>), do: { false, rest }
+
+  # float & double (same in Elixir)
+  defp do_unpack(<< 0xCA, float  :: [size(32), float, unit(1)], rest :: binary >>), do: { float, rest }
+  defp do_unpack(<< 0xCB, double :: [size(64), float, unit(1)], rest :: binary >>), do: { double, rest }
+
+  # raw bytes
   defp do_unpack(<< 0b101 :: size(3), len :: size(5), v :: [size(len), binary], rest :: binary >>), do: { v, rest }
   defp do_unpack(<< 0xDA, binary :: [size(16), unsigned, integer, unit(1)], rest :: binary >>), do: { binary, rest }
   defp do_unpack(<< 0xDB, binary :: [size(32), unsigned, integer, unit(1)], rest :: binary >>), do: { binary, rest }
