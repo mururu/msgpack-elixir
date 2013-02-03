@@ -35,6 +35,12 @@ defmodule MessagePackTest do
     check(nil)
   end
 
+  test "atom" do
+    Enum.each [:a, :"-111"], fn(term)->
+      assert term |> MessagePack.pack |> MessagePack.unpack == to_binary(term)
+    end
+  end
+
   test "unpack_all" do
     assert MessagePack.unpack(<<1, 2>>, all: true) == [1, 2]
   end
