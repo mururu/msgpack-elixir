@@ -12,19 +12,6 @@ defmodule MessagePack.Unpacker do
     do_unpack(binary)
   end
 
-  def unpack_all(binary) when is_binary(binary) do
-    do_unpack_all(binary, []) |> Enum.reverse
-  end
-
-  def do_unpack_all(binary, acc) do
-    case do_unpack(binary) do
-      { term, <<>> } ->
-        [term|acc]
-      { term, rest } when is_binary(binary) ->
-        do_unpack_all(rest, [term|acc])
-    end
-  end
-
   # positive fixnum
   defp do_unpack(<< 0 :: size(1), v :: size(7), rest :: binary >>), do: { v, rest }
 

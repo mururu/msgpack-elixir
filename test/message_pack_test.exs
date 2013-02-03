@@ -59,10 +59,6 @@ defmodule MessagePackTest do
     end
   end
 
-  test "unpack_all" do
-    assert MessagePack.unpack(<<1, 2>>, all: true) == [1, 2]
-  end
-
   test "unpack_rest" do
     assert MessagePack.unpack(<<1, 2>>, rest: true) == { 1, <<2>>}
   end
