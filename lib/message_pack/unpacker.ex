@@ -43,8 +43,8 @@ defmodule MessagePack.Unpacker do
 
   # raw bytes
   defp do_unpack(<< 0b101 :: size(3), len :: size(5), v :: [size(len), binary], rest :: binary >>), do: { v, rest }
-  defp do_unpack(<< 0xDA, binary :: [size(16), unsigned, integer, unit(1)], rest :: binary >>), do: { binary, rest }
-  defp do_unpack(<< 0xDB, binary :: [size(32), unsigned, integer, unit(1)], rest :: binary >>), do: { binary, rest }
+  defp do_unpack(<< 0xDA, len :: [size(16), unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>), do: { binary, rest }
+  defp do_unpack(<< 0xDB, len :: [size(32), unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>), do: { binary, rest }
 
   # array
   defp do_unpack(<< 0b1001 :: size(4), len :: size(4), rest :: binary >>), do: unpack_array(rest, len)
