@@ -75,7 +75,7 @@ defmodule MessagePack.Unpacker do
 
   defp do_unpack_array(binary, len, acc) do
     { term, rest } = do_unpack(binary)
-    { term, rest } = do_unpack_array(rest, len - 1, [term|acc])
+    do_unpack_array(rest, len - 1, [term|acc])
   end
 
   defp unpack_map(binary, len) do
