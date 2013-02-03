@@ -5,7 +5,11 @@ defmodule MessagePack do
     if options[:all] do
       MessagePack.Unpacker.unpack_all(binary)
     else
-      MessagePack.Unpacker.unpack(binary)
+      if options[:rest] do
+        MessagePack.Unpacker.unpack_rest(binary)
+      else
+        MessagePack.Unpacker.unpack(binary)
+      end
     end
   end
 end
@@ -100,6 +104,15 @@ defmodule MessagePack.Unpacker do
         result
       { result, rest } when is_binary(rest) ->
         raise "extra bytes follow after a deserialized object"
+      _ ->
+        raise "unpack error"
+    end
+  end
+
+  def unpack_rest(binary) when is_binary(binary) do
+    case do_unpack(binary) do
+      result = { _, rest } when is_binary(rest) ->
+        result
       _ ->
         raise "unpack error"
     end
