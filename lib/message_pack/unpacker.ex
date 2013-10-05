@@ -3,7 +3,7 @@ defmodule MessagePack.Unpacker do
     case do_unpack(binary) do
       { result, <<>> } ->
         result
-      { result, rest } when is_binary(rest) ->
+      { _result, rest } when is_binary(rest) ->
         raise MessagePack.ExtraBytesError, bytes: rest
     end
   end
