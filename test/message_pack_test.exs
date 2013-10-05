@@ -37,7 +37,7 @@ defmodule MessagePackTest do
 
   test "atom" do
     Enum.each [:a, :"-111"], fn(term)->
-      assert term |> MessagePack.pack |> MessagePack.unpack == to_binary(term)
+      assert term |> MessagePack.pack |> MessagePack.unpack == to_string(term)
     end
   end
 
