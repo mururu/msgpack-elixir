@@ -41,7 +41,7 @@ defimpl MessagePack.Packer, for: List do
   end
 
   defp pack_array(list) do
-    do_pack_array(list, []) |> Enum.reverse |> list_to_binary
+    do_pack_array(list, []) |> Enum.reverse |> :binary.list_to_bin
   end
 
   defp do_pack_array([], acc), do: acc
@@ -63,7 +63,7 @@ defimpl MessagePack.Packer, for: Tuple do
   end
 
   defp pack_map(map) do
-    do_pack_map(map, []) |> Enum.reverse |> list_to_binary
+    do_pack_map(map, []) |> Enum.reverse |> :binary.list_to_bin
   end
 
   defp do_pack_map([], acc), do: acc
