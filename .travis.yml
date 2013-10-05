@@ -3,7 +3,7 @@ notifications:
   recipients:
     - yuki@gnnk.net
 otp_release:
-  - R15B02
+  - R16B
 before_install:
   - git clone https://github.com/elixir-lang/elixir
   - cd elixir && make && cd ..
