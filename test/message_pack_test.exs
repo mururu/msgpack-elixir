@@ -8,27 +8,27 @@ defmodule MessagePackTest do
   end
 
   test "integer" do
-     [0, 1, 127, 128, 255, 256, 65535, 65536, 8388608, 0xFFFFFFFFFF, -1, -32, -33, -128, -129, -32768, -32769, 0xFFFFFFFFFF] |> Enum.each check(&1)
+     [0, 1, 127, 128, 255, 256, 65535, 65536, 8388608, 0xFFFFFFFFFF, -1, -32, -33, -128, -129, -32768, -32769, 0xFFFFFFFFFF] |> Enum.each &check(&1)
   end
 
   test "float" do
-    [0.0, 1.0, -1.0] |> Enum.each check(&1)
+    [0.0, 1.0, -1.0] |> Enum.each &check(&1)
   end
 
   test "binary" do
-    ["", "hoge", "ほげ", <<"hoge">>, << "hoge", 2, 255, 1>>] |> Enum.each check(&1)
+    ["", "hoge", "ほげ", <<"hoge">>, << "hoge", 2, 255, 1>>] |> Enum.each &check(&1)
   end
 
   test "array" do
-    [[], :lists.seq(0, 16), :lists.seq(0, 0x10000), [[], nil]] |> Enum.each check(&1)
+    [[], :lists.seq(0, 16), :lists.seq(0, 0x10000), [[], nil]] |> Enum.each &check(&1)
   end
 
   test "map" do
-    [{[]}, { :lists.seq(0, 0x10000) |> Enum.map(fn(i)-> {i, i*2} end) }] |> Enum.each check(&1)
+    [{[]}, { :lists.seq(0, 0x10000) |> Enum.map(fn(i)-> {i, i*2} end) }] |> Enum.each &check(&1)
   end
 
   test "boolean" do
-    [true, false] |> Enum.each check(&1)
+    [true, false] |> Enum.each &check(&1)
   end
 
   test "nil" do
@@ -61,7 +61,7 @@ defmodule MessagePackTest do
 
   test "invalid prefix" do
     [0xC1, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9,
-     0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9] |> Enum.each check_invalid_prefix(&1)
+     0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9] |> Enum.each &check_invalid_prefix(&1)
   end
 
   test "unpack_stream" do
@@ -90,7 +90,7 @@ defmodule MessagePackTest do
 
   test "compare with json" do
     from_msg  = Path.expand("../cases.msg", __FILE__)  |> File.read! |> unpack_all
-    from_json = Path.expand("../cases.json", __FILE__) |> File.read! |> :jiffy.decode |> Enum.map nillify(&1)
+    from_json = Path.expand("../cases.json", __FILE__) |> File.read! |> :jiffy.decode |> Enum.map &nillify(&1)
 
     Enum.zip(from_msg, from_json) |> Enum.each fn({term1, term2})->
       assert term1 == term2
