@@ -2,10 +2,9 @@ defprotocol MessagePack.Packer do
   def pack(term)
 end
 
-defimpl MessagePack.Packer, for: Number do
+defimpl MessagePack.Packer, for: Integer do
   def pack(i) when is_integer(i) and i < 0, do: pack_int(i)
   def pack(i) when is_integer(i),           do: pack_uint(i)
-  def pack(f) when is_float(f),             do: pack_double(f)
 
   defp pack_uint(i) when i < 128,        do: << 0b0  :: size(1), i :: size(7) >>
   defp pack_uint(i) when i < 256,        do: << 0xCC :: size(8), i :: size(8) >>
@@ -18,6 +17,10 @@ defimpl MessagePack.Packer, for: Number do
   defp pack_int(i) when i > -0x8000,     do: << 0xD1  :: size(8), i :: [size(16), big, signed, integer, unit(1)] >>
   defp pack_int(i) when i > -0x80000000, do: << 0xD2  :: size(8), i :: [size(32), big, signed, integer, unit(1)] >>
   defp pack_int(i),                      do: << 0xD3  :: size(8), i :: [size(64), big, signed, integer, unit(1)] >>
+end
+
+defimpl MessagePack.Packer, for: Float do
+  def pack(f) when is_float(f),             do: pack_double(f)
 
   defp pack_double(f), do: << 0xCB :: size(8), f :: [size(64), big, float, unit(1)]>>
 end
