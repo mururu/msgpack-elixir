@@ -4,9 +4,8 @@ defmodule MessagePack.Mixfile do
   def project do
     [ app: :message_pack,
       version: "0.0.1",
-      deps: deps,
-      env:
-        [test: [deps: test_deps]] ]
+      elixir: "~> 0.12.1-dev",
+      deps: deps ]
   end
 
   # Configuration for the OTP application
@@ -14,12 +13,11 @@ defmodule MessagePack.Mixfile do
     []
   end
 
-  defp test_deps do
-    [{ :jiffy, github: "davisp/jiffy" }]
-  end
-
   # Returns the list of dependencies in the format:
-  # { :foobar, "0.1", git: "https://github.com/elixir-lang/foobar.git" }
+  # { :foobar, git: "https://github.com/elixir-lang/foobar.git", tag: "0.1" }
+  #
+  # To specify particular versions, regardless of the tag, do:
+  # { :barbat, "~> 0.1", github: "elixir-lang/barbat" }
   defp deps do
     []
   end
