@@ -9,11 +9,11 @@ defmodule MessagePack.Packer do
   end
 
   def pack!(term, options // []) do
-    case pack(term, optinos) do
+    case pack(term, options) do
       { :ok, packed } ->
         packed
       { :error, error } ->
-        raise ArgumentError, message: error
+        raise ArgumentError, message: inspect(error)
     end
   end
 end
@@ -46,10 +46,10 @@ defimpl MessagePack.Packer.Protocol, for: Float do
 end
 
 defimpl MessagePack.Packer.Protocol, for: Atom do
-  def pack(nil, _),        do: << 0xC0 :: size(8) >>
-  def pack(false, _),      do: << 0xC2 :: size(8) >>
-  def pack(true, _),       do: << 0xC3 :: size(8) >>
-  def pack(atom, _),       do: MessagePack.Packer.pack(atom_to_binary(atom))
+  def pack(nil, _),   do: << 0xC0 :: size(8) >>
+  def pack(false, _), do: << 0xC2 :: size(8) >>
+  def pack(true, _),  do: << 0xC3 :: size(8) >>
+  def pack(atom, options),  do: MessagePack.Packer.Protocol.pack(atom_to_binary(atom), options)
 end
 
 defimpl MessagePack.Packer.Protocol, for: BitString do
@@ -106,37 +106,72 @@ defimpl MessagePack.Packer.Protocol, for: List do
 
   defp pack_map([{}], options), do: pack_map([], options)
   defp pack_map(map, options) do
-    case length(map) do
-      len when len < 16 ->
-        << 0b1000 :: 4, len :: [4, integer, unit(1)],
-          (bc { k, v } inlist map, do: << MessagePack.Packer.Protocol.pack(k, options) :: binary,
-                                          MessagePack.Packer.Protocol.pack(v, options) :: binary >>) :: binary >>
-      len when len < 0x10000 ->
-        << 0xDE :: 8, len :: [16, big, unsigned, integer, unit(1)],
-          (bc { k, v } inlist map, do: << MessagePack.Packer.Protocol.pack(k, options) :: binary,
-                                          MessagePack.Packer.Protocol.pack(v, options) :: binary >>) :: binary >>
-      len when len < 0x100000000 ->
-        << 0xDF :: 8, len :: [32, big, unsigned, integer, unit(1)],
-          (bc { k, v } inlist map, do: << MessagePack.Packer.Protocol.pack(k, options) :: binary,
-                                          MessagePack.Packer.Protocol.pack(v, options) :: binary >>) :: binary >>
-      _ ->
-        { :error, { :too_big, map } }
+    case do_pack_map(map, options) do
+      { :ok, binary } ->
+        case length(map) do
+          len when len < 16 ->
+            << 0b1000 :: 4, len :: [4, integer, unit(1)], binary :: binary >>
+          len when len < 0x10000 ->
+            << 0xDE :: 8, len :: [16, big, unsigned, integer, unit(1)], binary >>
+          len when len < 0x100000000 ->
+            << 0xDF :: 8, len :: [32, big, unsigned, integer, unit(1)], binary >>
+          _ ->
+            { :error, { :too_big, map } }
+        end
+      error ->
+        error
     end
   end
 
   defp pack_array(list, options) do
-    case length(list) do
-      len when len < 16 ->
-        << 0b1001 :: 4, len :: [4, integer, unit(1)],
-          (bc term inlist list, do: << MessagePack.Packer.Protocol.pack(term, options) :: binary >>) :: binary >>
-      len when len < 0x10000 ->
-        << 0xDC :: 8, len :: [16, big, unsigned, integer, unit(1)],
-          (bc term inlist list, do: << MessagePack.Packer.Protocol.pack(term, options) :: binary >>) :: binary >>
-      len when len < 0x100000000 ->
-        << 0xDD :: 8, len :: [32, big, unsigned, integer, unit(1)],
-          (bc term inlist list, do: << MessagePack.Packer.Protocol.pack(term, options) :: binary >>) :: binary >>
-      _ ->
-        { :error, { :too_big, list } }
+    case do_pack_array(list, options) do
+      { :ok, binary } ->
+        case length(list) do
+          len when len < 16 ->
+            << 0b1001 :: 4, len :: [4, integer, unit(1)], binary :: binary >>
+          len when len < 0x10000 ->
+            << 0xDC :: 8, len :: [16, big, unsigned, integer, unit(1)], binary :: binary >>
+          len when len < 0x100000000 ->
+            << 0xDD :: 8, len :: [32, big, unsigned, integer, unit(1)], binary :: binary >>
+          _ ->
+            { :error, { :too_big, list } }
+        end
+      error ->
+        error
+    end
+  end
+
+  def do_pack_map(map, options) do
+    do_pack_map(:lists.reverse(map), <<>>, options)
+  end
+
+  defp do_pack_map([], acc, _), do: { :ok, acc }
+  defp do_pack_map([{ k, v }|t], acc, options) do
+    case MessagePack.Packer.pack(k, options) do
+      { :ok, k } ->
+        case MessagePack.Packer.pack(v, options) do
+          { :ok, v } ->
+            do_pack_map(t, << k :: binary, v :: binary, acc :: binary >>, options)
+          error ->
+            error
+        end
+      error ->
+        error
+    end
+  end
+
+  defp do_pack_array(list, options) do
+    do_pack_array(:lists.reverse(list), <<>>, options)
+  end
+
+
+  defp do_pack_array([], acc, _), do: { :ok, acc }
+  defp do_pack_array([h|t], acc, options) do
+    case MessagePack.Packer.pack(h, options) do
+      { :ok, binary } ->
+        do_pack_array(t, << binary :: binary, acc :: binary >>, options)
+      error ->
+        error
     end
   end
 
