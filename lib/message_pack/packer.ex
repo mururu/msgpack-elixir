@@ -19,6 +19,7 @@ defmodule MessagePack.Packer do
 end
 
 defprotocol MessagePack.Packer.Protocol do
+  @fallback_to_any true
   def pack(term, options)
 end
 
@@ -182,4 +183,8 @@ defimpl MessagePack.Packer.Protocol, for: List do
 
   defp map_tuple?({ key, _ }) when is_atom(key) or is_binary(key), do: true
   defp map_tuple?(_), do: false
+end
+
+defimpl MessagePack.Packer.Protocol, for: Any do
+  def pack(term, _), do: { :error, { :badarg, term } }
 end
