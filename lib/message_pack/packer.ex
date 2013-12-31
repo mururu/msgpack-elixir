@@ -124,9 +124,9 @@ defimpl MessagePack.Packer.Protocol, for: List do
           len when len < 16 ->
             << 0b1000 :: 4, len :: [4, integer, unit(1)], binary :: binary >>
           len when len < 0x10000 ->
-            << 0xDE :: 8, len :: [16, big, unsigned, integer, unit(1)], binary >>
+            << 0xDE :: 8, len :: [16, big, unsigned, integer, unit(1)], binary :: binary>>
           len when len < 0x100000000 ->
-            << 0xDF :: 8, len :: [32, big, unsigned, integer, unit(1)], binary >>
+            << 0xDF :: 8, len :: [32, big, unsigned, integer, unit(1)], binary :: binary>>
           _ ->
             { :error, { :too_big, map } }
         end

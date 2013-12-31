@@ -104,7 +104,7 @@ defmodule MessagePack.Unpacker do
   # invalid prefix
   defp do_unpack(<< 0xC1, _ :: binary >>, _), do: { :error, { :invalid_prefix, 0xC1 } }
 
-  defp do_unpack(data, _), do: { :error, { :incomplete, data } }
+  defp do_unpack(_, _), do: { :error, :incomplete }
 
   defp unpack_array(binary, len, options) do
     do_unpack_array(binary, len, [], options)
@@ -115,8 +115,12 @@ defmodule MessagePack.Unpacker do
   end
 
   defp do_unpack_array(binary, len, acc, options) do
-    { term, rest } = do_unpack(binary, options)
-    do_unpack_array(rest, len - 1, [term|acc], options)
+    case do_unpack(binary, options) do
+      { :error, _ } = error ->
+        error
+      { term, rest } ->
+        do_unpack_array(rest, len - 1, [term|acc], options)
+    end
   end
 
   defp unpack_map(binary, 0, _) do
@@ -132,8 +136,16 @@ defmodule MessagePack.Unpacker do
   end
 
   defp do_unpack_map(binary, len, acc, options) do
-    { key, rest } = do_unpack(binary, options)
-    { value, rest } = do_unpack(rest, options)
-    do_unpack_map(rest, len - 1, [{key, value}|acc], options)
+    case do_unpack(binary, options) do
+      { :error, _ } = error ->
+        error
+      { key, rest } ->
+        case do_unpack(rest, options) do
+          { :error, _ } = error ->
+            error
+          { value, rest } ->
+            do_unpack_map(rest, len - 1, [{key, value}|acc], options)
+        end
+    end
   end
 end
