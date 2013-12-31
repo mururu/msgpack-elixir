@@ -1,15 +1,25 @@
 defmodule MessagePack.Unpacker do
 
-  defrecordp :options, enable_string: false
+  defrecordp :options, [:enable_string]
 
-  def unpack(binary, optinos // []) when is_binary(binary) do
-    optinos = options(enable_string: optinos[:enable_string])
-    do_unpack(binary, optinos)
+  def unpack(binary, options // []) when is_binary(binary) do
+    enable_string = if options[:enable_string] == true, do: true, else: false
+
+    case do_unpack(binary, options(enable_string: enable_string)) do
+      { :error, _ } = error ->
+        error
+      result ->
+        { :ok, result }
+    end
   end
 
-  def unpack!(binary, optinos // []) when is_binary(binary) do
-    optinos = options(enable_string: optinos[:enable_string])
-    do_unpack(binary, optinos)
+  def unpack!(binary, options // []) when is_binary(binary) do
+    case unpack(binary, options) do
+      { :ok, result } ->
+        result
+      { :error, error } ->
+        raise ArgumentError, message: inspect(error)
+    end
   end
 
   # positive fixnum
@@ -43,33 +53,32 @@ defmodule MessagePack.Unpacker do
 
   # old row format
   defp do_unpack(<< 0b101 :: 3, len :: 5, binary :: [size(len), binary], rest :: binary >>, options(enable_string: false)), do: { binary, rest }
-  defp do_unpack(<< 0xD9, len :: [8,  unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: false)), do: { binary, rest }
   defp do_unpack(<< 0xDA, len :: [16, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: false)), do: { binary, rest }
   defp do_unpack(<< 0xDB, len :: [32, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: false)), do: { binary, rest }
 
   # string
-  defp do_unpack(<< 0b101 :: 3, len :: 5, binary :: [size(len), binary], rest :: binary >>, options(enable_string: false)) do
+  defp do_unpack(<< 0b101 :: 3, len :: 5, binary :: [size(len), binary], rest :: binary >>, options(enable_string: true)) do
     if String.valid?(binary) do
       { binary, rest }
     else
       { :error, { :invalid_string, binary } }
     end
   end
-  defp do_unpack(<< 0xD9, len :: [8,  unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: false)) do
+  defp do_unpack(<< 0xD9, len :: [8, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: true)) do
     if String.valid?(binary) do
       { binary, rest }
     else
       { :error, { :invalid_string, binary } }
     end
   end
-  defp do_unpack(<< 0xDA, len :: [16, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: false)) do
+  defp do_unpack(<< 0xDA, len :: [16, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: true)) do
     if String.valid?(binary) do
       { binary, rest }
     else
       { :error, { :invalid_string, binary } }
     end
   end
-  defp do_unpack(<< 0xDB, len :: [32, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: false)) do
+  defp do_unpack(<< 0xDB, len :: [32, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: true)) do
     if String.valid?(binary) do
       { binary, rest }
     else
@@ -88,7 +97,7 @@ defmodule MessagePack.Unpacker do
   defp do_unpack(<< 0xDD, len :: [32, big, unsigned, integer, unit(1)], rest :: binary >>, options), do: unpack_array(rest, len, options)
 
   # map
-  defp do_unpack(<< 0b1000 :: 4, len :: 4, rest :: binary >>, _), do: unpack_map(rest, len, options)
+  defp do_unpack(<< 0b1000 :: 4, len :: 4, rest :: binary >>, options), do: unpack_map(rest, len, options)
   defp do_unpack(<< 0xDE, len :: [16, big, unsigned, integer, unit(1)], rest :: binary >>, options), do: unpack_map(rest, len, options)
   defp do_unpack(<< 0xDF, len :: [32, big, unsigned, integer, unit(1)], rest :: binary >>, options), do: unpack_map(rest, len, options)
 

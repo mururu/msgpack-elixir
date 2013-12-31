@@ -57,9 +57,9 @@ defimpl MessagePack.Packer.Protocol, for: BitString do
   def pack(binary, options) when is_binary(binary) do
     if options[:enable_string] do
       if String.valid?(binary) do
-        pack_raw(binary)
+        pack_string(binary)
       else
-        pack_raw2(binary)
+        pack_bin(binary)
       end
     else
       pack_raw(binary)
@@ -70,9 +70,6 @@ defimpl MessagePack.Packer.Protocol, for: BitString do
   defp pack_raw(binary) when byte_size(binary) < 32 do
     << 0b101 :: 3, byte_size(binary) :: 5, binary :: binary >>
   end
-  defp pack_raw(binary) when byte_size(binary) < 0x100 do
-    << 0xD9  :: 8, byte_size(binary) :: [8,  big, unsigned, integer, unit(1)], binary :: binary >>
-  end
   defp pack_raw(binary) when byte_size(binary) < 0x10000 do
     << 0xDA  :: 8, byte_size(binary) :: [16, big, unsigned, integer, unit(1)], binary :: binary >>
   end
@@ -81,17 +78,31 @@ defimpl MessagePack.Packer.Protocol, for: BitString do
   end
   defp pack_raw(binary), do: { :error, { :too_big, binary } }
 
+  defp pack_string(binary) when byte_size(binary) < 32 do
+    << 0b101 :: 3, byte_size(binary) :: 5, binary :: binary >>
+  end
+  defp pack_string(binary) when byte_size(binary) < 0x100 do
+    << 0xD9  :: 8, byte_size(binary) :: [8,  big, unsigned, integer, unit(1)], binary :: binary >>
+  end
+  defp pack_string(binary) when byte_size(binary) < 0x10000 do
+    << 0xDA  :: 8, byte_size(binary) :: [16, big, unsigned, integer, unit(1)], binary :: binary >>
+  end
+  defp pack_string(binary) when byte_size(binary) < 0x100000000 do
+    << 0xDB  :: 8, byte_size(binary) :: [32, big, unsigned, integer, unit(1)], binary :: binary >>
+  end
+  defp pack_string(binary), do: { :error, { :too_big, binary } }
+
   # for binary format
-  defp pack_raw2(binary) when byte_size(binary) < 0x100 do
+  defp pack_bin(binary) when byte_size(binary) < 0x100 do
     << 0xC4  :: 8, byte_size(binary) :: [8,  big, unsigned, integer, unit(1)], binary :: binary >>
   end
-  defp pack_raw2(binary) when byte_size(binary) < 0x10000 do
+  defp pack_bin(binary) when byte_size(binary) < 0x10000 do
     << 0xC5  :: 8, byte_size(binary) :: [16, big, unsigned, integer, unit(1)], binary :: binary >>
   end
-  defp pack_raw2(binary) when byte_size(binary) < 0x100000000 do
+  defp pack_bin(binary) when byte_size(binary) < 0x100000000 do
     << 0xC6  :: 8, byte_size(binary) :: [32, big, unsigned, integer, unit(1)], binary :: binary >>
   end
-  defp pack_raw2(binary) do
+  defp pack_bin(binary) do
     { :error, { :too_big, binary } }
   end
 end
@@ -178,11 +189,8 @@ defimpl MessagePack.Packer.Protocol, for: List do
 
   defp map?([]), do: false
   defp map?([{}]), do: true
-  defp map?(list) when is_list(list), do: :lists.all(&map_tuple?/1, list)
+  defp map?(list) when is_list(list), do: :lists.all(&(match?({_, _}, &1)), list)
   defp map?(_), do: false
-
-  defp map_tuple?({ key, _ }) when is_atom(key) or is_binary(key), do: true
-  defp map_tuple?(_), do: false
 end
 
 defimpl MessagePack.Packer.Protocol, for: Any do
