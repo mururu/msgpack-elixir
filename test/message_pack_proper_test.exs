@@ -6,7 +6,7 @@ defmodule MessagePackProperTest do
     fun = fn ->
       forall term in msgpack do
         { :ok, bin } = MessagePack.pack(term)
-        { :ok, { term2, <<>> } } = MessagePack.unpack(bin)
+        { :ok, term2 } = MessagePack.unpack(bin)
         term == term2
       end
     end
@@ -19,7 +19,7 @@ defmodule MessagePackProperTest do
     fun = fn ->
       forall term in msgpack do
         { :ok, bin } = MessagePack.pack(term, enable_string: true)
-        { :ok, { term2, <<>> } } = MessagePack.unpack(bin, enable_string: true)
+        { :ok, term2 } = MessagePack.unpack(bin, enable_string: true)
         term == term2
       end
     end

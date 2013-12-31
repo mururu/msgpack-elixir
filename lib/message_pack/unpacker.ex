@@ -8,13 +8,35 @@ defmodule MessagePack.Unpacker do
     case do_unpack(binary, options(enable_string: enable_string)) do
       { :error, _ } = error ->
         error
-      result ->
+      { result, "" } ->
         { :ok, result }
+      { _, bin } when is_binary(bin) ->
+        { :error, :not_just_binary }
     end
   end
 
   def unpack!(binary, options // []) when is_binary(binary) do
     case unpack(binary, options) do
+      { :ok, result } ->
+        result
+      { :error, error } ->
+        raise ArgumentError, message: inspect(error)
+    end
+  end
+
+  def unpack_once(binary, options // []) when is_binary(binary) do
+    enable_string = if options[:enable_string] == true, do: true, else: false
+
+    case do_unpack(binary, options(enable_string: enable_string)) do
+      { :error, _ } = error ->
+        error
+      result ->
+        { :ok, result }
+    end
+  end
+
+  def unpack_once!(binary, options // []) when is_binary(binary) do
+    case unpack_once(binary, options) do
       { :ok, result } ->
         result
       { :error, error } ->

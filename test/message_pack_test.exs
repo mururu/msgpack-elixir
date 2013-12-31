@@ -5,7 +5,7 @@ defmodule MessagePackTest do
     quote location: :keep, bind_quoted: [term: term, len: len, options: options] do
       assert { :ok, bin } = MessagePack.pack(term, options)
       assert byte_size(bin) == len
-      assert { :ok, { term2, "" } } = MessagePack.unpack(bin, options)
+      assert { :ok, term2 } = MessagePack.unpack(bin, options)
       assert term == term2
     end
   end
