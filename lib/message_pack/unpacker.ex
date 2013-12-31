@@ -2,6 +2,8 @@ defmodule MessagePack.Unpacker do
 
   defrecordp :options, [:enable_string]
 
+  @spec unpack(binary) :: { :ok, term } | { :error, term }
+  @spec unpack(binary, Keyword.t) :: { :ok, term } | { :error, term }
   def unpack(binary, options // []) when is_binary(binary) do
     enable_string = if options[:enable_string] == true, do: true, else: false
 
@@ -15,6 +17,8 @@ defmodule MessagePack.Unpacker do
     end
   end
 
+  @spec unpack!(binary) :: term | no_return
+  @spec unpack!(binary, Keyword.t) :: term | no_return
   def unpack!(binary, options // []) when is_binary(binary) do
     case unpack(binary, options) do
       { :ok, result } ->
@@ -24,6 +28,8 @@ defmodule MessagePack.Unpacker do
     end
   end
 
+  @spec unpack(binary) :: { :ok, { term, binary } } | { :error, term }
+  @spec unpack(binary, Keyword.t) :: { :ok, { term, binary } } | { :error, term }
   def unpack_once(binary, options // []) when is_binary(binary) do
     enable_string = if options[:enable_string] == true, do: true, else: false
 
@@ -35,6 +41,8 @@ defmodule MessagePack.Unpacker do
     end
   end
 
+  @spec unpack!(binary) :: { term, binary } | no_return
+  @spec unpack!(binary, Keyword.t) :: { term, binary } | no_return
   def unpack_once!(binary, options // []) when is_binary(binary) do
     case unpack_once(binary, options) do
       { :ok, result } ->

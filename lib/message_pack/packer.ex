@@ -1,4 +1,6 @@
 defmodule MessagePack.Packer do
+  @spec pack(term) :: { :ok, binary } | { :error, term }
+  @spec pack(term, Keyword.t) :: { :ok, binary } | { :error, term }
   def pack(term, options // []) do
     case MessagePack.Packer.Protocol.pack(term, options) do
       { :error, _ } = error ->
@@ -8,6 +10,8 @@ defmodule MessagePack.Packer do
     end
   end
 
+  @spec pack!(term) :: binary | no_return
+  @spec pack!(term, Keyword.t) :: binary | no_return
   def pack!(term, options // []) do
     case pack(term, options) do
       { :ok, packed } ->
@@ -20,6 +24,8 @@ end
 
 defprotocol MessagePack.Packer.Protocol do
   @fallback_to_any true
+
+  @spec pack(term, Keyword.t) :: binary | { :error, term }
   def pack(term, options)
 end
 
