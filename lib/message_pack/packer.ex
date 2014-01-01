@@ -1,8 +1,13 @@
 defmodule MessagePack.Packer do
+
+  defrecordp :options, [:enable_string, :ext_packer, :ext_unpacker]
+
   @spec pack(term) :: { :ok, binary } | { :error, term }
   @spec pack(term, Keyword.t) :: { :ok, binary } | { :error, term }
   def pack(term, options // []) do
-    case MessagePack.Packer.Protocol.pack(term, options) do
+    options = parse_options(options)
+
+    case do_pack(term, options) do
       { :error, _ } = error ->
         error
       packed ->
@@ -20,18 +25,45 @@ defmodule MessagePack.Packer do
         raise ArgumentError, message: inspect(error)
     end
   end
-end
 
-defprotocol MessagePack.Packer.Protocol do
-  @fallback_to_any true
+  defp parse_options(options) do
+    enable_string = !!options[:enable_string]
 
-  @spec pack(term, Keyword.t) :: binary | { :error, term }
-  def pack(term, options)
-end
+    {packer, unpacker} = case options[:ext] do
+      mod when is_atom(mod) ->
+        { &mod.pack/2, &mod.unpack/2 }
+      list when is_list(list) ->
+        { list[:packer], list[:unpacker] }
+      _ ->
+        { nil, nil }
+    end
 
-defimpl MessagePack.Packer.Protocol, for: Integer do
-  def pack(i, _) when i < 0, do: pack_int(i)
-  def pack(i, _), do: pack_uint(i)
+    options(enable_string: enable_string, ext_packer: packer, ext_unpacker: unpacker)
+  end
+
+  defp do_pack(nil, _),   do: << 0xC0 :: size(8) >>
+  defp do_pack(false, _), do: << 0xC2 :: size(8) >>
+  defp do_pack(true, _),  do: << 0xC3 :: size(8) >>
+  defp do_pack(atom, options) when is_atom(atom), do: do_pack(atom_to_binary(atom), options)
+  defp do_pack(i, _) when is_integer(i) and i < 0, do: pack_int(i)
+  defp do_pack(i, _) when is_integer(i), do: pack_uint(i)
+  defp do_pack(f, _) when is_float(f), do: << 0xCB :: size(8), f :: [size(64), big, float, unit(1)]>>
+  defp do_pack(binary, options(enable_string: true)) when is_binary(binary) do
+    if String.valid?(binary) do
+      pack_string(binary)
+    else
+      pack_bin(binary)
+    end
+  end
+  defp do_pack(binary, _) when is_binary(binary), do: pack_raw(binary)
+  defp do_pack(list, options) when is_list(list) do
+    if map?(list) do
+      pack_map(list, options)
+    else
+      pack_array(list, options)
+    end
+  end
+  defp do_pack(term, _), do: { :error, { :badarg, term } }
 
   defp pack_int(i) when i >= -32,                  do: << 0b111 :: 3, i :: 5 >>
   defp pack_int(i) when i >= -128,                 do: << 0xD0  :: 8, i :: [8,  big, signed, integer, unit(1)] >>
@@ -46,33 +78,8 @@ defimpl MessagePack.Packer.Protocol, for: Integer do
   defp pack_uint(i) when i < 0x100000000,         do: << 0xCE :: 8, i :: [32, big, unsigned, integer, unit(1)] >>
   defp pack_uint(i) when i < 0x10000000000000000, do: << 0xCF :: 8, i :: [64, big, unsigned, integer, unit(1)] >>
   defp pack_uint(i), do: { :error, { :too_big, i } }
-end
 
-defimpl MessagePack.Packer.Protocol, for: Float do
-  def pack(f, _), do: << 0xCB :: size(8), f :: [size(64), big, float, unit(1)]>>
-end
-
-defimpl MessagePack.Packer.Protocol, for: Atom do
-  def pack(nil, _),   do: << 0xC0 :: size(8) >>
-  def pack(false, _), do: << 0xC2 :: size(8) >>
-  def pack(true, _),  do: << 0xC3 :: size(8) >>
-  def pack(atom, options),  do: MessagePack.Packer.Protocol.pack(atom_to_binary(atom), options)
-end
-
-defimpl MessagePack.Packer.Protocol, for: BitString do
-  def pack(binary, options) when is_binary(binary) do
-    if options[:enable_string] do
-      if String.valid?(binary) do
-        pack_string(binary)
-      else
-        pack_bin(binary)
-      end
-    else
-      pack_raw(binary)
-    end
-  end
-
-  # for string format and old raw format
+  # for old row format
   defp pack_raw(binary) when byte_size(binary) < 32 do
     << 0b101 :: 3, byte_size(binary) :: 5, binary :: binary >>
   end
@@ -84,6 +91,7 @@ defimpl MessagePack.Packer.Protocol, for: BitString do
   end
   defp pack_raw(binary), do: { :error, { :too_big, binary } }
 
+  # for string format
   defp pack_string(binary) when byte_size(binary) < 32 do
     << 0b101 :: 3, byte_size(binary) :: 5, binary :: binary >>
   end
@@ -110,16 +118,6 @@ defimpl MessagePack.Packer.Protocol, for: BitString do
   end
   defp pack_bin(binary) do
     { :error, { :too_big, binary } }
-  end
-end
-
-defimpl MessagePack.Packer.Protocol, for: List do
-  def pack(list, options) do
-    if map?(list) do
-      pack_map(list, options)
-    else
-      pack_array(list, options)
-    end
   end
 
   defp pack_map([{}], options), do: pack_map([], options)
@@ -165,16 +163,16 @@ defimpl MessagePack.Packer.Protocol, for: List do
 
   defp do_pack_map([], acc, _), do: { :ok, acc }
   defp do_pack_map([{ k, v }|t], acc, options) do
-    case MessagePack.Packer.pack(k, options) do
-      { :ok, k } ->
-        case MessagePack.Packer.pack(v, options) do
-          { :ok, v } ->
-            do_pack_map(t, << k :: binary, v :: binary, acc :: binary >>, options)
-          error ->
-            error
-        end
-      error ->
+    case do_pack(k, options) do
+      { :error, _ } = error ->
         error
+      k ->
+        case do_pack(v, options) do
+          { :error, _ } = error ->
+            error
+          v ->
+            do_pack_map(t, << k :: binary, v :: binary, acc :: binary >>, options)
+        end
     end
   end
 
@@ -182,14 +180,13 @@ defimpl MessagePack.Packer.Protocol, for: List do
     do_pack_array(:lists.reverse(list), <<>>, options)
   end
 
-
   defp do_pack_array([], acc, _), do: { :ok, acc }
   defp do_pack_array([h|t], acc, options) do
-    case MessagePack.Packer.pack(h, options) do
-      { :ok, binary } ->
-        do_pack_array(t, << binary :: binary, acc :: binary >>, options)
-      error ->
+    case do_pack(h, options) do
+      { :error, _ } = error ->
         error
+      binary ->
+        do_pack_array(t, << binary :: binary, acc :: binary >>, options)
     end
   end
 
@@ -197,8 +194,4 @@ defimpl MessagePack.Packer.Protocol, for: List do
   defp map?([{}]), do: true
   defp map?(list) when is_list(list), do: :lists.all(&(match?({_, _}, &1)), list)
   defp map?(_), do: false
-end
-
-defimpl MessagePack.Packer.Protocol, for: Any do
-  def pack(term, _), do: { :error, { :badarg, term } }
 end
