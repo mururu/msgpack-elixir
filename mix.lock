@@ -1,1 +1,4 @@
-[ "jiffy": {:git, "git://github.com/davisp/jiffy.git", "d16a4fd968e000b65e4678cccfad68d7a0a8bd1c", []} ]
+[ "jsex": {:git, "git://github.com/talentdeficit/jsex.git", "1e89a76f770e14bbbd1b5bebfc05312a984f21a4", []},
+  "jsx": {:git, "git://github.com/talentdeficit/jsx.git", "e50af6e109cb03bd26acf715cbc77de746507d1d", [{:tag, "v1.4.3"}]},
+  "proper": {:git, "git://github.com/manopapad/proper.git", "c37cab86f5e9dd5c5e751248cf1566a5d4f9535c", []},
+  "properex": {:git, "git://github.com/yrashk/properex.git", "d597c603993c9629c6007bbb0c53e2191c4cad26", []} ]
