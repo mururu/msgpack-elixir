@@ -4,7 +4,7 @@
 
 ## Usage
 
-```
+```elixir
 # pack
 MessagePack.pack([1,2,3]) #=> { :ok, <<147,1,2,3>> }
 MessagePack.pack!([1,2,3]) #=> <<147,1,2,3>>
@@ -24,7 +24,7 @@ MessagePack.unpack_once!(<<147,1,2,3,4>>) #=> {[1, 2, 3], <<4>>}
 
 Support string type. This options is `false` by default.
 
-```
+```elixir
 iex(1)> { :ok, bin } = MessagePack.pack(<<255>>)
 {:ok, <<161, 255>>}
 iex(3)> MessagePack.unpack(<<161, 255>>)
