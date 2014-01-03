@@ -30,12 +30,12 @@ defmodule MessagePack.Packer do
     enable_string = !!options[:enable_string]
 
     {packer, unpacker} = case options[:ext] do
+      nil ->
+        { nil, nil }
       mod when is_atom(mod) ->
-        { &mod.pack/2, &mod.unpack/2 }
+        { &mod.pack/1, &mod.unpack/2 }
       list when is_list(list) ->
         { list[:packer], list[:unpacker] }
-      _ ->
-        { nil, nil }
     end
 
     options(enable_string: enable_string, ext_packer: packer, ext_unpacker: unpacker)
@@ -61,6 +61,12 @@ defmodule MessagePack.Packer do
       pack_map(list, options)
     else
       pack_array(list, options)
+    end
+  end
+  defp do_pack(term, options(ext_packer: packer)) when is_function(packer) do
+    case pack_ext(term, packer) do
+      { :ok, packed } -> packed
+      { :error, _ } = error -> error
     end
   end
   defp do_pack(term, _), do: { :error, { :badarg, term } }
@@ -194,4 +200,35 @@ defmodule MessagePack.Packer do
   defp map?([{}]), do: true
   defp map?(list) when is_list(list), do: :lists.all(&(match?({_, _}, &1)), list)
   defp map?(_), do: false
+
+  defp pack_ext(term, packer) do
+    case packer.(term) do
+      { :ok, { type, data } } when 0 < type and type < 0x100 and is_binary(data) ->
+        maybe_bin = case byte_size(data) do
+                      1 -> << 0xD4, type :: 8, data :: binary >>
+                      2 -> << 0xD5, type :: 8, data :: binary >>
+                      4 -> << 0xD6, type :: 8, data :: binary >>
+                      8 -> << 0xD7, type :: 8, data :: binary >>
+                      16 -> << 0xD8, type :: 8, data :: binary >>
+                      size when size < 0x100 ->
+                        << 0xC7, size :: 8, type :: 8, data :: binary >>
+                      size when size < 0x10000 ->
+                        << 0xC8, size :: 16, type :: 8, data :: binary >>
+                      size when size < 0x100000000 ->
+                        << 0xC9, size :: 32, type :: 8, data :: binary >>
+                      _ ->
+                        { :error, { :too_big, data } }
+                    end
+        case maybe_bin do
+          { :error, _ } = error ->
+            error
+          bin ->
+            { :ok, bin }
+        end
+      { :ok, other } ->
+        { :error, { :invalid_ext_data, other } }
+      { :error, _ } = error ->
+        error
+    end
+  end
 end

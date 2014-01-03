@@ -1,13 +1,13 @@
 defmodule MessagePack.Unpacker do
 
-  defrecordp :options, [:enable_string]
+  defrecordp :options, [:enable_string, :ext_packer, :ext_unpacker]
 
   @spec unpack(binary) :: { :ok, term } | { :error, term }
   @spec unpack(binary, Keyword.t) :: { :ok, term } | { :error, term }
   def unpack(binary, options // []) when is_binary(binary) do
-    enable_string = if options[:enable_string] == true, do: true, else: false
+    options = parse_options(options)
 
-    case do_unpack(binary, options(enable_string: enable_string)) do
+    case do_unpack(binary, options) do
       { :error, _ } = error ->
         error
       { result, "" } ->
@@ -31,9 +31,9 @@ defmodule MessagePack.Unpacker do
   @spec unpack(binary) :: { :ok, { term, binary } } | { :error, term }
   @spec unpack(binary, Keyword.t) :: { :ok, { term, binary } } | { :error, term }
   def unpack_once(binary, options // []) when is_binary(binary) do
-    enable_string = if options[:enable_string] == true, do: true, else: false
+    options = parse_options(options)
 
-    case do_unpack(binary, options(enable_string: enable_string)) do
+    case do_unpack(binary, options) do
       { :error, _ } = error ->
         error
       result ->
@@ -50,6 +50,21 @@ defmodule MessagePack.Unpacker do
       { :error, error } ->
         raise ArgumentError, message: inspect(error)
     end
+  end
+
+  defp parse_options(options) do
+    enable_string = !!options[:enable_string]
+
+    { packer, unpacker } = case options[:ext] do
+      nil ->
+        { nil, nil }
+      mod when is_atom(mod) ->
+        { &mod.pack/1, &mod.unpack/2 }
+      list when is_list(list) ->
+        { list[:packer], list[:unpacker] }
+    end
+
+    options(enable_string: enable_string, ext_packer: packer, ext_unpacker: unpacker)
   end
 
   # positive fixnum
@@ -131,6 +146,31 @@ defmodule MessagePack.Unpacker do
   defp do_unpack(<< 0xDE, len :: [16, big, unsigned, integer, unit(1)], rest :: binary >>, options), do: unpack_map(rest, len, options)
   defp do_unpack(<< 0xDF, len :: [32, big, unsigned, integer, unit(1)], rest :: binary >>, options), do: unpack_map(rest, len, options)
 
+  defp do_unpack(<< 0xD4, type :: 8, data :: [1, binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+    unpack_ext(unpacker, type, data, rest)
+  end
+  defp do_unpack(<< 0xD5, type :: 8, data :: [2, binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+    unpack_ext(unpacker, type, data, rest)
+  end
+  defp do_unpack(<< 0xD6, type :: 8, data :: [4, binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+    unpack_ext(unpacker, type, data, rest)
+  end
+  defp do_unpack(<< 0xD7, type :: 8, data :: [8, binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+    unpack_ext(unpacker, type, data, rest)
+  end
+  defp do_unpack(<< 0xD8, type :: 8, data :: [16, binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+    unpack_ext(unpacker, type, data, rest)
+  end
+  defp do_unpack(<< 0xC7, len :: [8, unsigned, integer, unit(1)], type :: 8, data :: [size(len), binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+    unpack_ext(unpacker, type, data, rest)
+  end
+  defp do_unpack(<< 0xC8, len :: [16, big, unsigned, integer, unit(1)], type :: 8, data :: [size(len), binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+    unpack_ext(unpacker, type, data, rest)
+  end
+  defp do_unpack(<< 0xC9, len :: [32, big, unsigned, integer, unit(1)], type :: 8, data :: [size(len), binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+    unpack_ext(unpacker, type, data, rest)
+  end
+
   # invalid prefix
   defp do_unpack(<< 0xC1, _ :: binary >>, _), do: { :error, { :invalid_prefix, 0xC1 } }
 
@@ -176,6 +216,16 @@ defmodule MessagePack.Unpacker do
           { value, rest } ->
             do_unpack_map(rest, len - 1, [{key, value}|acc], options)
         end
+    end
+  end
+
+  def unpack_ext(nil, _, _, _), do: { :error, :undefined_ext }
+  def unpack_ext(unpacker, type, data, rest) when is_function(unpacker) do
+    case unpacker.(type, data) do
+      { :ok, term } ->
+        { term, rest }
+      { :error, _ } = error ->
+        error
     end
   end
 end

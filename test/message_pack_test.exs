@@ -46,6 +46,14 @@ defmodule MessagePackTest do
     end
   end
 
+  defmacro check_ext(num, overhead) do
+    quote location: :keep, bind_quoted: [num: num, overhead: overhead] do
+      packer = fn({ :ext, term }) -> { :ok, { 1, term } } end
+      unpacker = fn(1, bin) -> { :ok, { :ext, bin } } end
+      check({ :ext, :binary.copy(<<255>>, num) }, num + overhead, ext: [packer: packer, unpacker: unpacker])
+    end
+  end
+
   test "nil" do
     check nil, 1
   end
@@ -199,6 +207,32 @@ defmodule MessagePackTest do
     check_map 0x10000, 5
     #check_map 0xFFFFFFFF, 5
   end
+
+  test "fixext" do
+    check_ext 1, 2
+    check_ext 2, 2
+    check_ext 4, 2
+    check_ext 8, 2
+    check_ext 16, 2
+  end
+
+  test "ext 8" do
+    check_ext 17, 3
+    check_ext 0xFF, 3
+  end
+
+  test "ext 16" do
+    check_ext 0x100, 4
+    check_ext 0xFFFF, 4
+  end
+
+  test "ext 32" do
+    check_ext 0x10000, 6
+    #check_ext 0xFFFFFFFF, 6
+  end
+
+
+  ## error tests
 
   test "pack too big error" do
     assert MessagePack.pack(-0x8000000000000001) == { :error, { :too_big, -0x8000000000000001 } }
