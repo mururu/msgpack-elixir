@@ -4,7 +4,7 @@ defmodule MessagePack.Packer do
 
   @spec pack(term) :: { :ok, binary } | { :error, term }
   @spec pack(term, Keyword.t) :: { :ok, binary } | { :error, term }
-  def pack(term, options // []) do
+  def pack(term, options \\ []) do
     options = parse_options(options)
 
     case do_pack(term, options) do
@@ -17,7 +17,7 @@ defmodule MessagePack.Packer do
 
   @spec pack!(term) :: binary | no_return
   @spec pack!(term, Keyword.t) :: binary | no_return
-  def pack!(term, options // []) do
+  def pack!(term, options \\ []) do
     case pack(term, options) do
       { :ok, packed } ->
         packed

@@ -1,7 +1,7 @@
 defmodule MessagePackTest do
   use ExUnit.Case
 
-  defmacrop check(term, len, options // []) do
+  defmacrop check(term, len, options \\ []) do
     quote location: :keep, bind_quoted: [term: term, len: len, options: options] do
       assert { :ok, bin } = MessagePack.pack(term, options)
       assert byte_size(bin) == len

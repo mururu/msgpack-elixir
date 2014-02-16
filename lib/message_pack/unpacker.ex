@@ -4,7 +4,7 @@ defmodule MessagePack.Unpacker do
 
   @spec unpack(binary) :: { :ok, term } | { :error, term }
   @spec unpack(binary, Keyword.t) :: { :ok, term } | { :error, term }
-  def unpack(binary, options // []) when is_binary(binary) do
+  def unpack(binary, options \\ []) when is_binary(binary) do
     options = parse_options(options)
 
     case do_unpack(binary, options) do
@@ -19,7 +19,7 @@ defmodule MessagePack.Unpacker do
 
   @spec unpack!(binary) :: term | no_return
   @spec unpack!(binary, Keyword.t) :: term | no_return
-  def unpack!(binary, options // []) when is_binary(binary) do
+  def unpack!(binary, options \\ []) when is_binary(binary) do
     case unpack(binary, options) do
       { :ok, result } ->
         result
@@ -30,7 +30,7 @@ defmodule MessagePack.Unpacker do
 
   @spec unpack(binary) :: { :ok, { term, binary } } | { :error, term }
   @spec unpack(binary, Keyword.t) :: { :ok, { term, binary } } | { :error, term }
-  def unpack_once(binary, options // []) when is_binary(binary) do
+  def unpack_once(binary, options \\ []) when is_binary(binary) do
     options = parse_options(options)
 
     case do_unpack(binary, options) do
@@ -43,7 +43,7 @@ defmodule MessagePack.Unpacker do
 
   @spec unpack!(binary) :: { term, binary } | no_return
   @spec unpack!(binary, Keyword.t) :: { term, binary } | no_return
-  def unpack_once!(binary, options // []) when is_binary(binary) do
+  def unpack_once!(binary, options \\ []) when is_binary(binary) do
     case unpack_once(binary, options) do
       { :ok, result } ->
         result
