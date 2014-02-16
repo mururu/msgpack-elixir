@@ -1,4 +1,3 @@
-[ "jsex": {:git, "git://github.com/talentdeficit/jsex.git", "1e89a76f770e14bbbd1b5bebfc05312a984f21a4", []},
-  "jsx": {:git, "git://github.com/talentdeficit/jsx.git", "e50af6e109cb03bd26acf715cbc77de746507d1d", [{:tag, "v1.4.3"}]},
-  "proper": {:git, "git://github.com/manopapad/proper.git", "c37cab86f5e9dd5c5e751248cf1566a5d4f9535c", []},
-  "properex": {:git, "git://github.com/yrashk/properex.git", "d597c603993c9629c6007bbb0c53e2191c4cad26", []} ]
+[ "jsx": {:git, "git://github.com/talentdeficit/jsx.git", "9cb8703beecaf4c39e3dbfa293c747a0e7aa6450", []},
+  "proper": {:git, "git://github.com/manopapad/proper.git", "da31c4be95557717cd7a56add0a24541a91c038c", []},
+  "properex": {:git, "git://github.com/mururu/properex.git", "61c7e7f8b3205ad8d1a98232ba49dcecf0050111", [branch: "build"]} ]

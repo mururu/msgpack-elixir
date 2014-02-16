@@ -13,8 +13,8 @@ defmodule MessagePack.Mixfile do
   end
 
   defp deps(:test) do
-    [{ :properex, github: "yrashk/properex" },
-     { :jsex, github: "talentdeficit/jsex" }]
+    [{ :properex, github: "mururu/properex", branch: "build" }, # temporary
+     { :jsx, github: "talentdeficit/jsx" }]
   end
 
   defp deps(_) do

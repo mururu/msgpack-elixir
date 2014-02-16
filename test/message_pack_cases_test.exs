@@ -15,13 +15,13 @@ defmodule MessagePackCasesTest do
   defp nillify(other), do: other
 
   test "compare with json" do
-    from_msg  = Path.expand("../cases.msg", __FILE__)  
-                |> File.read! 
+    from_msg  = Path.expand("cases.msg", __DIR__)
+                |> File.read!
                 |> unpack_all
 
-    from_json = Path.expand("../cases.json", __FILE__)
+    from_json = Path.expand("cases.json", __DIR__)
                 |> File.read!
-                |> JSEX.decode!
+                |> :jsx.decode
                 |> Enum.map &nillify(&1)
 
     Enum.zip(from_msg, from_json) |> Enum.map fn({term1, term2})->
