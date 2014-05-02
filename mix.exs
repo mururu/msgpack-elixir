@@ -4,7 +4,7 @@ defmodule MessagePack.Mixfile do
   def project do
     [ app: :message_pack,
       version: "0.1.0",
-      elixir: "~> 0.12.1-dev",
+      elixir: "~> 0.12",
       deps: deps(Mix.env) ]
   end
 
@@ -13,7 +13,7 @@ defmodule MessagePack.Mixfile do
   end
 
   defp deps(:test) do
-    [{ :properex, github: "mururu/properex", branch: "build" }, # temporary
+    [{ :properex, github: "reset/properex", branch: "elixir-13" },
      { :jsx, github: "talentdeficit/jsx" }]
   end
 
