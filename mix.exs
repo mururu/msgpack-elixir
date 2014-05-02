@@ -5,7 +5,13 @@ defmodule MessagePack.Mixfile do
     [ app: :message_pack,
       version: "0.1.0",
       elixir: "~> 0.12",
-      deps: deps(Mix.env) ]
+      deps: deps(Mix.env),
+      build_per_environment: false,
+
+      name: "MessagePack",
+      source_url: "https://github.com/mururu/msgpack-elixir",
+      description: "MessagePack Implementation for Elixir",
+      package: package ]
   end
 
   def application do
@@ -19,5 +25,10 @@ defmodule MessagePack.Mixfile do
 
   defp deps(_) do
     []
+  end
+
+  defp package do
+    [ contributors: "Yuki Ito",
+      licenses: ["MIT"] ]
   end
 end
