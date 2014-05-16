@@ -1,3 +1,0 @@
-[ "jsx": {:git, "git://github.com/talentdeficit/jsx.git", "9cb8703beecaf4c39e3dbfa293c747a0e7aa6450", []},
-  "proper": {:git, "git://github.com/manopapad/proper.git", "da31c4be95557717cd7a56add0a24541a91c038c", []},
-  "properex": {:git, "git://github.com/mururu/properex.git", "61c7e7f8b3205ad8d1a98232ba49dcecf0050111", [branch: "build"]} ]
