@@ -1,7 +1,4 @@
 defmodule MessagePack.Unpacker do
-
-  defrecordp :options, [:enable_string, :ext_packer, :ext_unpacker]
-
   @spec unpack(binary) :: { :ok, term } | { :error, term }
   @spec unpack(binary, Keyword.t) :: { :ok, term } | { :error, term }
   def unpack(binary, options \\ []) when is_binary(binary) do
@@ -64,7 +61,7 @@ defmodule MessagePack.Unpacker do
         { list[:packer], list[:unpacker] }
     end
 
-    options(enable_string: enable_string, ext_packer: packer, ext_unpacker: unpacker)
+    %{enable_string: enable_string, ext_packer: packer, ext_unpacker: unpacker}
   end
 
   # positive fixnum
@@ -97,33 +94,33 @@ defmodule MessagePack.Unpacker do
   defp do_unpack(<< 0xCB, float :: [64, float, unit(1)], rest :: binary >>, _), do: { float, rest }
 
   # old row format
-  defp do_unpack(<< 0b101 :: 3, len :: 5, binary :: [size(len), binary], rest :: binary >>, options(enable_string: false)), do: { binary, rest }
-  defp do_unpack(<< 0xDA, len :: [16, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: false)), do: { binary, rest }
-  defp do_unpack(<< 0xDB, len :: [32, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: false)), do: { binary, rest }
+  defp do_unpack(<< 0b101 :: 3, len :: 5, binary :: [size(len), binary], rest :: binary >>, %{enable_string: false}), do: { binary, rest }
+  defp do_unpack(<< 0xDA, len :: [16, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, %{enable_string: false}), do: { binary, rest }
+  defp do_unpack(<< 0xDB, len :: [32, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, %{enable_string: false}), do: { binary, rest }
 
   # string
-  defp do_unpack(<< 0b101 :: 3, len :: 5, binary :: [size(len), binary], rest :: binary >>, options(enable_string: true)) do
+  defp do_unpack(<< 0b101 :: 3, len :: 5, binary :: [size(len), binary], rest :: binary >>, %{enable_string: true}) do
     if String.valid?(binary) do
       { binary, rest }
     else
       { :error, { :invalid_string, binary } }
     end
   end
-  defp do_unpack(<< 0xD9, len :: [8, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: true)) do
+  defp do_unpack(<< 0xD9, len :: [8, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, %{enable_string: true}) do
     if String.valid?(binary) do
       { binary, rest }
     else
       { :error, { :invalid_string, binary } }
     end
   end
-  defp do_unpack(<< 0xDA, len :: [16, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: true)) do
+  defp do_unpack(<< 0xDA, len :: [16, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, %{enable_string: true}) do
     if String.valid?(binary) do
       { binary, rest }
     else
       { :error, { :invalid_string, binary } }
     end
   end
-  defp do_unpack(<< 0xDB, len :: [32, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, options(enable_string: true)) do
+  defp do_unpack(<< 0xDB, len :: [32, unsigned, integer, unit(1)], binary :: [size(len), binary], rest :: binary >>, %{enable_string: true}) do
     if String.valid?(binary) do
       { binary, rest }
     else
@@ -146,28 +143,28 @@ defmodule MessagePack.Unpacker do
   defp do_unpack(<< 0xDE, len :: [16, big, unsigned, integer, unit(1)], rest :: binary >>, options), do: unpack_map(rest, len, options)
   defp do_unpack(<< 0xDF, len :: [32, big, unsigned, integer, unit(1)], rest :: binary >>, options), do: unpack_map(rest, len, options)
 
-  defp do_unpack(<< 0xD4, type :: 8, data :: [1, binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+  defp do_unpack(<< 0xD4, type :: 8, data :: [1, binary], rest :: binary >>, %{ext_unpacker: unpacker}) do
     unpack_ext(unpacker, type, data, rest)
   end
-  defp do_unpack(<< 0xD5, type :: 8, data :: [2, binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+  defp do_unpack(<< 0xD5, type :: 8, data :: [2, binary], rest :: binary >>, %{ext_unpacker: unpacker}) do
     unpack_ext(unpacker, type, data, rest)
   end
-  defp do_unpack(<< 0xD6, type :: 8, data :: [4, binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+  defp do_unpack(<< 0xD6, type :: 8, data :: [4, binary], rest :: binary >>, %{ext_unpacker: unpacker}) do
     unpack_ext(unpacker, type, data, rest)
   end
-  defp do_unpack(<< 0xD7, type :: 8, data :: [8, binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+  defp do_unpack(<< 0xD7, type :: 8, data :: [8, binary], rest :: binary >>, %{ext_unpacker: unpacker}) do
     unpack_ext(unpacker, type, data, rest)
   end
-  defp do_unpack(<< 0xD8, type :: 8, data :: [16, binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+  defp do_unpack(<< 0xD8, type :: 8, data :: [16, binary], rest :: binary >>, %{ext_unpacker: unpacker}) do
     unpack_ext(unpacker, type, data, rest)
   end
-  defp do_unpack(<< 0xC7, len :: [8, unsigned, integer, unit(1)], type :: 8, data :: [size(len), binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+  defp do_unpack(<< 0xC7, len :: [8, unsigned, integer, unit(1)], type :: 8, data :: [size(len), binary], rest :: binary >>, %{ext_unpacker: unpacker}) do
     unpack_ext(unpacker, type, data, rest)
   end
-  defp do_unpack(<< 0xC8, len :: [16, big, unsigned, integer, unit(1)], type :: 8, data :: [size(len), binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+  defp do_unpack(<< 0xC8, len :: [16, big, unsigned, integer, unit(1)], type :: 8, data :: [size(len), binary], rest :: binary >>, %{ext_unpacker: unpacker}) do
     unpack_ext(unpacker, type, data, rest)
   end
-  defp do_unpack(<< 0xC9, len :: [32, big, unsigned, integer, unit(1)], type :: 8, data :: [size(len), binary], rest :: binary >>, options(ext_unpacker: unpacker)) do
+  defp do_unpack(<< 0xC9, len :: [32, big, unsigned, integer, unit(1)], type :: 8, data :: [size(len), binary], rest :: binary >>, %{ext_unpacker: unpacker}) do
     unpack_ext(unpacker, type, data, rest)
   end
 

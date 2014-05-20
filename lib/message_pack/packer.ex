@@ -1,7 +1,4 @@
 defmodule MessagePack.Packer do
-
-  defrecordp :options, [:enable_string, :ext_packer, :ext_unpacker]
-
   @spec pack(term) :: { :ok, binary } | { :error, term }
   @spec pack(term, Keyword.t) :: { :ok, binary } | { :error, term }
   def pack(term, options \\ []) do
@@ -38,7 +35,7 @@ defmodule MessagePack.Packer do
         { list[:packer], list[:unpacker] }
     end
 
-    options(enable_string: enable_string, ext_packer: packer, ext_unpacker: unpacker)
+    %{enable_string: enable_string, ext_packer: packer, ext_unpacker: unpacker}
   end
 
   defp do_pack(nil, _),   do: << 0xC0 :: size(8) >>
@@ -48,7 +45,7 @@ defmodule MessagePack.Packer do
   defp do_pack(i, _) when is_integer(i) and i < 0, do: pack_int(i)
   defp do_pack(i, _) when is_integer(i), do: pack_uint(i)
   defp do_pack(f, _) when is_float(f), do: << 0xCB :: size(8), f :: [size(64), big, float, unit(1)]>>
-  defp do_pack(binary, options(enable_string: true)) when is_binary(binary) do
+  defp do_pack(binary, %{enable_string: true}) when is_binary(binary) do
     if String.valid?(binary) do
       pack_string(binary)
     else
@@ -63,7 +60,7 @@ defmodule MessagePack.Packer do
       pack_array(list, options)
     end
   end
-  defp do_pack(term, options(ext_packer: packer)) when is_function(packer) do
+  defp do_pack(term, %{ext_packer: packer}) when is_function(packer) do
     case pack_ext(term, packer) do
       { :ok, packed } -> packed
       { :error, _ } = error -> error
