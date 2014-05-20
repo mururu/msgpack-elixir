@@ -3,7 +3,7 @@ defmodule MessagePack.Mixfile do
 
   def project do
     [ app: :message_pack,
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 0.12",
       deps: deps(Mix.env),
       build_per_environment: false,
@@ -28,7 +28,8 @@ defmodule MessagePack.Mixfile do
   end
 
   defp package do
-    [ contributors: "Yuki Ito",
-      licenses: ["MIT"] ]
+    [ contributors: ["Yuki Ito"],
+      licenses: ["MIT"],
+      links: %{ "GitHub" => "https://github.com/mururu/msgpack-elixir"} ]
   end
 end
