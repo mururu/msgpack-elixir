@@ -41,7 +41,7 @@ defmodule MessagePack.Packer do
   defp do_pack(nil, _),   do: << 0xC0 :: size(8) >>
   defp do_pack(false, _), do: << 0xC2 :: size(8) >>
   defp do_pack(true, _),  do: << 0xC3 :: size(8) >>
-  defp do_pack(atom, options) when is_atom(atom), do: do_pack(atom_to_binary(atom), options)
+  defp do_pack(atom, options) when is_atom(atom), do: do_pack(Atom.to_string(atom), options)
   defp do_pack(i, _) when is_integer(i) and i < 0, do: pack_int(i)
   defp do_pack(i, _) when is_integer(i), do: pack_uint(i)
   defp do_pack(f, _) when is_float(f), do: << 0xCB :: size(8), f :: [size(64), big, float, unit(1)]>>
