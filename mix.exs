@@ -3,7 +3,7 @@ defmodule MessagePack.Mixfile do
 
   def project do
     [ app: :message_pack,
-      version: "0.1.1",
+      version: "0.1.2",
       elixir: "~> 0.14.0",
       deps: deps(Mix.env),
       build_per_environment: false,
