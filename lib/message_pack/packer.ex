@@ -44,7 +44,7 @@ defmodule MessagePack.Packer do
   defp do_pack(atom, options) when is_atom(atom), do: do_pack(Atom.to_string(atom), options)
   defp do_pack(i, _) when is_integer(i) and i < 0, do: pack_int(i)
   defp do_pack(i, _) when is_integer(i), do: pack_uint(i)
-  defp do_pack(f, _) when is_float(f), do: << 0xCB :: size(8), f :: [size(64), big, float, unit(1)]>>
+  defp do_pack(f, _) when is_float(f), do: << 0xCB :: size(8), f :: size(64)-big-float-unit(1)>>
   defp do_pack(binary, %{enable_string: true}) when is_binary(binary) do
     if String.valid?(binary) do
       pack_string(binary)
@@ -69,17 +69,17 @@ defmodule MessagePack.Packer do
   defp do_pack(term, _), do: { :error, { :badarg, term } }
 
   defp pack_int(i) when i >= -32,                  do: << 0b111 :: 3, i :: 5 >>
-  defp pack_int(i) when i >= -128,                 do: << 0xD0  :: 8, i :: [8,  big, signed, integer, unit(1)] >>
-  defp pack_int(i) when i >= -0x8000,              do: << 0xD1  :: 8, i :: [16, big, signed, integer, unit(1)] >>
-  defp pack_int(i) when i >= -0x80000000,          do: << 0xD2  :: 8, i :: [32, big, signed, integer, unit(1)] >>
-  defp pack_int(i) when i >= -0x8000000000000000 , do: << 0xD3  :: 8, i :: [64, big, signed, integer, unit(1)] >>
+  defp pack_int(i) when i >= -128,                 do: << 0xD0  :: 8, i :: 8-big-signed-integer-unit(1) >>
+  defp pack_int(i) when i >= -0x8000,              do: << 0xD1  :: 8, i :: 16-big-signed-integer-unit(1) >>
+  defp pack_int(i) when i >= -0x80000000,          do: << 0xD2  :: 8, i :: 32-big-signed-integer-unit(1) >>
+  defp pack_int(i) when i >= -0x8000000000000000 , do: << 0xD3  :: 8, i :: 64-big-signed-integer-unit(1) >>
   defp pack_int(i), do: { :error, { :too_big, i } }
 
   defp pack_uint(i) when i < 0x80,                do: << 0    :: 1, i :: 7 >>
   defp pack_uint(i) when i < 0x100,               do: << 0xCC :: 8, i :: 8 >>
-  defp pack_uint(i) when i < 0x10000,             do: << 0xCD :: 8, i :: [16, big, unsigned, integer, unit(1)] >>
-  defp pack_uint(i) when i < 0x100000000,         do: << 0xCE :: 8, i :: [32, big, unsigned, integer, unit(1)] >>
-  defp pack_uint(i) when i < 0x10000000000000000, do: << 0xCF :: 8, i :: [64, big, unsigned, integer, unit(1)] >>
+  defp pack_uint(i) when i < 0x10000,             do: << 0xCD :: 8, i :: 16-big-unsigned-integer-unit(1) >>
+  defp pack_uint(i) when i < 0x100000000,         do: << 0xCE :: 8, i :: 32-big-unsigned-integer-unit(1) >>
+  defp pack_uint(i) when i < 0x10000000000000000, do: << 0xCF :: 8, i :: 64-big-unsigned-integer-unit(1) >>
   defp pack_uint(i), do: { :error, { :too_big, i } }
 
   # for old row format
@@ -87,10 +87,10 @@ defmodule MessagePack.Packer do
     << 0b101 :: 3, byte_size(binary) :: 5, binary :: binary >>
   end
   defp pack_raw(binary) when byte_size(binary) < 0x10000 do
-    << 0xDA  :: 8, byte_size(binary) :: [16, big, unsigned, integer, unit(1)], binary :: binary >>
+    << 0xDA  :: 8, byte_size(binary) :: 16-big-unsigned-integer-unit(1), binary :: binary >>
   end
   defp pack_raw(binary) when byte_size(binary) < 0x100000000 do
-    << 0xDB  :: 8, byte_size(binary) :: [32, big, unsigned, integer, unit(1)], binary :: binary >>
+    << 0xDB  :: 8, byte_size(binary) :: 32-big-unsigned-integer-unit(1), binary :: binary >>
   end
   defp pack_raw(binary), do: { :error, { :too_big, binary } }
 
@@ -99,25 +99,25 @@ defmodule MessagePack.Packer do
     << 0b101 :: 3, byte_size(binary) :: 5, binary :: binary >>
   end
   defp pack_string(binary) when byte_size(binary) < 0x100 do
-    << 0xD9  :: 8, byte_size(binary) :: [8,  big, unsigned, integer, unit(1)], binary :: binary >>
+    << 0xD9  :: 8, byte_size(binary) :: 8-big-unsigned-integer-unit(1), binary :: binary >>
   end
   defp pack_string(binary) when byte_size(binary) < 0x10000 do
-    << 0xDA  :: 8, byte_size(binary) :: [16, big, unsigned, integer, unit(1)], binary :: binary >>
+    << 0xDA  :: 8, byte_size(binary) :: 16-big-unsigned-integer-unit(1), binary :: binary >>
   end
   defp pack_string(binary) when byte_size(binary) < 0x100000000 do
-    << 0xDB  :: 8, byte_size(binary) :: [32, big, unsigned, integer, unit(1)], binary :: binary >>
+    << 0xDB  :: 8, byte_size(binary) :: 32-big-unsigned-integer-unit(1), binary :: binary >>
   end
   defp pack_string(binary), do: { :error, { :too_big, binary } }
 
   # for binary format
   defp pack_bin(binary) when byte_size(binary) < 0x100 do
-    << 0xC4  :: 8, byte_size(binary) :: [8,  big, unsigned, integer, unit(1)], binary :: binary >>
+    << 0xC4  :: 8, byte_size(binary) :: 8-big-unsigned-integer-unit(1), binary :: binary >>
   end
   defp pack_bin(binary) when byte_size(binary) < 0x10000 do
-    << 0xC5  :: 8, byte_size(binary) :: [16, big, unsigned, integer, unit(1)], binary :: binary >>
+    << 0xC5  :: 8, byte_size(binary) :: 16-big-unsigned-integer-unit(1), binary :: binary >>
   end
   defp pack_bin(binary) when byte_size(binary) < 0x100000000 do
-    << 0xC6  :: 8, byte_size(binary) :: [32, big, unsigned, integer, unit(1)], binary :: binary >>
+    << 0xC6  :: 8, byte_size(binary) :: 32-big-unsigned-integer-unit(1), binary :: binary >>
   end
   defp pack_bin(binary) do
     { :error, { :too_big, binary } }
@@ -129,11 +129,11 @@ defmodule MessagePack.Packer do
       { :ok, binary } ->
         case length(map) do
           len when len < 16 ->
-            << 0b1000 :: 4, len :: [4, integer, unit(1)], binary :: binary >>
+            << 0b1000 :: 4, len :: 4-integer-unit(1), binary :: binary >>
           len when len < 0x10000 ->
-            << 0xDE :: 8, len :: [16, big, unsigned, integer, unit(1)], binary :: binary>>
+            << 0xDE :: 8, len :: 16-big-unsigned-integer-unit(1), binary :: binary>>
           len when len < 0x100000000 ->
-            << 0xDF :: 8, len :: [32, big, unsigned, integer, unit(1)], binary :: binary>>
+            << 0xDF :: 8, len :: 32-big-unsigned-integer-unit(1), binary :: binary>>
           _ ->
             { :error, { :too_big, map } }
         end
@@ -147,11 +147,11 @@ defmodule MessagePack.Packer do
       { :ok, binary } ->
         case length(list) do
           len when len < 16 ->
-            << 0b1001 :: 4, len :: [4, integer, unit(1)], binary :: binary >>
+            << 0b1001 :: 4, len :: 4-integer-unit(1), binary :: binary >>
           len when len < 0x10000 ->
-            << 0xDC :: 8, len :: [16, big, unsigned, integer, unit(1)], binary :: binary >>
+            << 0xDC :: 8, len :: 16-big-unsigned-integer-unit(1), binary :: binary >>
           len when len < 0x100000000 ->
-            << 0xDD :: 8, len :: [32, big, unsigned, integer, unit(1)], binary :: binary >>
+            << 0xDD :: 8, len :: 32-big-unsigned-integer-unit(1), binary :: binary >>
           _ ->
             { :error, { :too_big, list } }
         end
