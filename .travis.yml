@@ -3,9 +3,17 @@ notifications:
   recipients:
     - yuki@gnnk.net
 otp_release:
-  - 17.0
+  - 17.1
+env:
+  - ELIXIR_VERSION=0.15.1
+  - ELIXIR_VERSION=1.0.0
 before_install:
-  - git clone https://github.com/elixir-lang/elixir
-  - cd elixir && make && cd ..
-before_script: "export PATH=`pwd`/elixir/bin:$PATH"
-script: "MIX_ENV=test mix do deps.get, test"
+  - wget https://github.com/elixir-lang/elixir/releases/download/v$ELIXIR_VERSION/Precompiled.zip
+  - unzip -d elixir Precompiled.zip
+  - wget https://github.com/alco/goon/releases/download/v1.0.1/goon_linux_amd64.tar.gz
+  - tar -xf goon_linux_amd64.tar.gz
+before_script:
+  - export PATH=`pwd`/elixir/bin:$PATH
+  - mix local.hex --force
+script:
+  - MIX_ENV=test mix do deps.get, test
