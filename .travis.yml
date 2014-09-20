@@ -2,6 +2,8 @@ language: erlang
 notifications:
   recipients:
     - yuki@gnnk.net
+otp_release:
+  - 17.1
 env:
   - ELIXIR_VERSION=0.15.1
   - ELIXIR_VERSION=1.0.0
@@ -13,6 +15,5 @@ before_install:
 before_script:
   - export PATH=`pwd`/elixir/bin:$PATH
   - mix local.hex --force
-  - mix deps.get
 script:
-  - MIX_ENV=all mix test
+  - MIX_ENV=test mix do deps.get, test
