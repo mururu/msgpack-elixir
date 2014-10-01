@@ -2,6 +2,16 @@
 
 [![Build Status](https://travis-ci.org/mururu/msgpack-elixir.png?branch=master)](https://travis-ci.org/mururu/msgpack-elixir)
 
+## Installation
+
+Add `:message_pack` as a dependency in your `mix.exs` file.
+
+```elixir
+defp deps do
+  [{:message_pack, "~> 0.1.4"}]
+end
+```
+
 ## Usage
 
 ```elixir
