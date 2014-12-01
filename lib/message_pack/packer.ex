@@ -53,13 +53,9 @@ defmodule MessagePack.Packer do
     end
   end
   defp do_pack(binary, _) when is_binary(binary), do: pack_raw(binary)
-  defp do_pack(list, options) when is_list(list) do
-    if map?(list) do
-      pack_map(list, options)
-    else
-      pack_array(list, options)
-    end
-  end
+  defp do_pack(list, options) when is_list(list), do: pack_array(list, options)
+  defp do_pack(map, options) when is_map(map), do: pack_map(Enum.into(map,[]), options)
+
   defp do_pack(term, %{ext_packer: packer}) when is_function(packer) do
     case pack_ext(term, packer) do
       { :ok, packed } -> packed
@@ -123,7 +119,6 @@ defmodule MessagePack.Packer do
     { :error, { :too_big, binary } }
   end
 
-  defp pack_map([{}], options), do: pack_map([], options)
   defp pack_map(map, options) do
     case do_pack_map(map, options) do
       { :ok, binary } ->
@@ -192,11 +187,6 @@ defmodule MessagePack.Packer do
         do_pack_array(t, << binary :: binary, acc :: binary >>, options)
     end
   end
-
-  defp map?([]), do: false
-  defp map?([{}]), do: true
-  defp map?(list) when is_list(list), do: :lists.all(&(match?({_, _}, &1)), list)
-  defp map?(_), do: false
 
   defp pack_ext(term, packer) do
     case packer.(term) do

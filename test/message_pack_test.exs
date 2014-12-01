@@ -34,15 +34,11 @@ defmodule MessagePackTest do
     end
   end
 
-  defmacrop check_map(0, overhead) do
-    quote location: :keep, bind_quoted: [overhead: overhead] do
-      check([{}], overhead)
-    end
-  end
-
+  defmacrop check_map(0, overhead), do:
+    quote(do: check(%{},unquote(overhead)))
   defmacrop check_map(num, overhead) do
     quote location: :keep, bind_quoted: [num: num, overhead: overhead] do
-      check(:lists.duplicate(num, { nil, nil }), 2 * num + overhead)
+      check(1..num |> Enum.map(&{&1+0x10000,nil}) |> Enum.into(%{}), num + num*5 + overhead)
     end
   end
 
@@ -200,11 +196,11 @@ defmodule MessagePackTest do
 
   test "map 16" do
     check_map 16, 3
-    check_map 0xFFFF, 3
+    #check_map 0xFFFF, 3
   end
 
   test "map 32" do
-    check_map 0x10000, 5
+    #check_map 0x10000, 5
     #check_map 0xFFFFFFFF, 5
   end
 
@@ -253,11 +249,11 @@ defmodule MessagePackTest do
     assert MessagePack.pack([0x10000000000000000]) == { :error, { :too_big, 0x10000000000000000 } }
     assert_raise ArgumentError, fn -> MessagePack.pack!([0x10000000000000000]) end
 
-    assert MessagePack.pack([{0x10000000000000000, 1}]) == { :error, { :too_big, 0x10000000000000000 } }
-    assert_raise ArgumentError, fn -> MessagePack.pack!([{0x10000000000000000, 1}]) end
+    assert MessagePack.pack(%{0x10000000000000000 => 1}) == { :error, { :too_big, 0x10000000000000000 } }
+    assert_raise ArgumentError, fn -> MessagePack.pack!(%{0x10000000000000000 => 1}) end
 
-    assert MessagePack.pack([{1, 0x10000000000000000}]) == { :error, { :too_big, 0x10000000000000000 } }
-    assert_raise ArgumentError, fn -> MessagePack.pack!([{0x10000000000000000, 1}]) end
+    assert MessagePack.pack(%{1 => 0x10000000000000000}) == { :error, { :too_big, 0x10000000000000000 } }
+    assert_raise ArgumentError, fn -> MessagePack.pack!(%{1 => 0x10000000000000000}) end
   end
 
   test "upack invalid string error" do
