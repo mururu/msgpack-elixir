@@ -193,7 +193,7 @@ defmodule MessagePack.Packer do
 
   defp pack_ext(term, packer) do
     case packer.(term) do
-      { :ok, { type, data } } when 0 < type and type < 0x100 and is_binary(data) ->
+      { :ok, { type, data } } when type < 0x100 and is_binary(data) ->
         maybe_bin = case byte_size(data) do
                       1 -> << 0xD4, type :: 8, data :: binary >>
                       2 -> << 0xD5, type :: 8, data :: binary >>
