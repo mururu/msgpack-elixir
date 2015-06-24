@@ -8,7 +8,7 @@ Add `:message_pack` as a dependency in your `mix.exs` file.
 
 ```elixir
 defp deps do
-  [{:message_pack, "~> 0.1.4"}]
+  [{:message_pack, "~> 0.2.0"}]
 end
 ```
 
