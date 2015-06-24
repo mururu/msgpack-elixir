@@ -5,7 +5,7 @@ defmodule MessagePack.Mixfile do
     [ app: :message_pack,
       version: "0.1.4",
       elixir: "~> 1.0.0 or ~> 0.15.1",
-      deps: deps(Mix.env),
+      deps: deps,
       build_per_environment: false,
 
       name: "MessagePack",
@@ -18,13 +18,10 @@ defmodule MessagePack.Mixfile do
     []
   end
 
-  defp deps(:test) do
-    [{ :properex, github: "reset/properex", branch: "elixir-15" },
-     { :jsx, github: "talentdeficit/jsx" }]
-  end
-
-  defp deps(_) do
-    []
+  defp deps do
+    [{ :excheck, "~> 0.2.0", only: :test },
+     {:triq, github: "krestenkrab/triq", only: :test},
+     { :poison, "~> 1.2.0", only: :test },]
   end
 
   defp package do

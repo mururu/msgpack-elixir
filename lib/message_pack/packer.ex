@@ -53,20 +53,19 @@ defmodule MessagePack.Packer do
     end
   end
   defp do_pack(binary, _) when is_binary(binary), do: pack_raw(binary)
-  defp do_pack(list, options) when is_list(list) do
-    if map?(list) do
-      pack_map(list, options)
-    else
-      pack_array(list, options)
-    end
-  end
-  defp do_pack(term, %{ext_packer: packer}) when is_function(packer) do
+  defp do_pack(list, options) when is_list(list), do: pack_array(list, options)
+  defp do_pack(%{__struct__: _}=term, %{ext_packer: packer}) when is_function(packer), do: pack_ext_wrap(term, packer)
+  defp do_pack(map, options) when is_map(map), do: pack_map(Enum.into(map,[]), options)
+
+  defp do_pack(term, %{ext_packer: packer}) when is_function(packer), do: pack_ext_wrap(term, packer)
+  defp do_pack(term, _), do: { :error, { :badarg, term } }
+
+  defp pack_ext_wrap(term, packer) do
     case pack_ext(term, packer) do
       { :ok, packed } -> packed
       { :error, _ } = error -> error
     end
   end
-  defp do_pack(term, _), do: { :error, { :badarg, term } }
 
   defp pack_int(i) when i >= -32,                  do: << 0b111 :: 3, i :: 5 >>
   defp pack_int(i) when i >= -128,                 do: << 0xD0  :: 8, i :: 8-big-signed-integer-unit(1) >>
@@ -123,7 +122,6 @@ defmodule MessagePack.Packer do
     { :error, { :too_big, binary } }
   end
 
-  defp pack_map([{}], options), do: pack_map([], options)
   defp pack_map(map, options) do
     case do_pack_map(map, options) do
       { :ok, binary } ->
@@ -193,14 +191,9 @@ defmodule MessagePack.Packer do
     end
   end
 
-  defp map?([]), do: false
-  defp map?([{}]), do: true
-  defp map?(list) when is_list(list), do: :lists.all(&(match?({_, _}, &1)), list)
-  defp map?(_), do: false
-
   defp pack_ext(term, packer) do
     case packer.(term) do
-      { :ok, { type, data } } when 0 < type and type < 0x100 and is_binary(data) ->
+      { :ok, { type, data } } when type < 0x100 and is_binary(data) ->
         maybe_bin = case byte_size(data) do
                       1 -> << 0xD4, type :: 8, data :: binary >>
                       2 -> << 0xD5, type :: 8, data :: binary >>

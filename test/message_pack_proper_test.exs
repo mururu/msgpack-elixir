@@ -1,38 +1,28 @@
 defmodule MessagePackProperTest do
-  use ExUnit.Case
-  use Proper.Properties
+  use ExUnit.Case, async: false
+  use ExCheck
 
-  test "pack -> unpack" do
-    fun = fn ->
-      forall term in msgpack do
-        { :ok, bin } = MessagePack.pack(term)
-        { :ok, term2 } = MessagePack.unpack(bin)
-        term == term2
-      end
-    end
-    ExUnit.CaptureIO.capture_io fn ->
-      assert Proper.quickcheck(fun.(), numtests: 100) == true
+  property :bijective_packing do
+    for_all term in msgpack do
+      { :ok, bin } = MessagePack.pack(term)
+      { :ok, term2 } = MessagePack.unpack(bin)
+      term == term2
     end
   end
 
-  test "pack -> unpack with str" do
-    fun = fn ->
-      forall term in msgpack do
-        { :ok, bin } = MessagePack.pack(term, enable_string: true)
-        { :ok, term2 } = MessagePack.unpack(bin, enable_string: true)
-        term == term2
-      end
-    end
-    ExUnit.CaptureIO.capture_io fn ->
-      assert Proper.quickcheck(fun.(), numtests: 100) == true
+  property :bijective_str_packing do
+    for_all term in msgpack do
+      { :ok, bin } = MessagePack.pack(term, enable_string: true)
+      { :ok, term2 } = MessagePack.unpack(bin, enable_string: true)
+      term == term2
     end
   end
 
   defp msgpack do
     oneof([
       nil,
-      boolean,
-      float,
+      bool,
+      real,
       positive_fixint,
       uint8,
       uint16,
@@ -45,10 +35,14 @@ defmodule MessagePackProperTest do
       int64,
       fixraw,
       raw16,
-      raw32,
+      # raw32, # do not work, too big binary and to long test
       fixarray,
       fixmap
     ])
+  end
+  defp msgpack_atomic do
+    oneof([nil,bool,real,positive_fixint,uint8,uint16,uint32,uint64,
+           negative_fixint,int8,int16,int32,int64,fixraw,raw16])
   end
 
   defp positive_fixint, do: choose(0, 127)
@@ -64,32 +58,26 @@ defmodule MessagePackProperTest do
   defp int64, do: choose(-0x8000000000000000, -0x80000001)
 
   defp fixraw do
-    let size = choose(0, 31) do
-      let bin = binary(size), do: bin
-    end
+    bind choose(0,31),&binary(&1)
   end
   defp raw16 do
-    let size = choose(32, 0xFFFF) do
-      let bin = binary(size), do: bin
-    end
+    bind choose(32, 0xFFFF),&binary(&1)
   end
-  defp raw32 do
-    let size = uint32 do
-      let bin = binary(size), do: bin
-    end
-  end
+  #defp raw32 do
+  #  bind uint32,&binary(&1)
+  #end
 
   defp fixarray do
-    let size = choose(0, 15) do
-      :proper_gen.list_gen(size, msgpack())
-    end
+    bind choose(0, 15), &vector(&1,msgpack_atomic)
   end
   #defp array16
   #defp array32
 
   defp fixmap do
-    let size = choose(0, 15) do
-      :proper_gen.list_gen(size, {msgpack(), msgpack()})
+    bind choose(0, 15), fn size->
+      bind vector(size,{msgpack_atomic,msgpack_atomic}), fn kv_vector->
+        Enum.into(kv_vector,%{})
+      end
     end
   end
   #defp map16

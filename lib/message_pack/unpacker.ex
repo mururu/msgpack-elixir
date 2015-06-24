@@ -190,16 +190,12 @@ defmodule MessagePack.Unpacker do
     end
   end
 
-  defp unpack_map(binary, 0, _) do
-    { [{}], binary }
-  end
-
   defp unpack_map(binary, len, options) do
     do_unpack_map(binary, len, [], options)
   end
 
   defp do_unpack_map(rest, 0, acc, _) do
-    { :lists.reverse(acc), rest }
+    { Enum.into(acc,%{}), rest }
   end
 
   defp do_unpack_map(binary, len, acc, options) do
