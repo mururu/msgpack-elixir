@@ -95,6 +95,7 @@ defmodule MessagePack.Unpacker do
 
   # old row format
   defp do_unpack(<< 0b101 :: 3, len :: 5, binary :: size(len)-binary, rest :: binary >>, %{enable_string: false}), do: { binary, rest }
+  defp do_unpack(<< 0xD9, len :: 8-unsigned-integer-unit(1), binary :: size(len)-binary, rest :: binary >>, %{enable_string: false}), do: {binary, rest }
   defp do_unpack(<< 0xDA, len :: 16-unsigned-integer-unit(1), binary :: size(len)-binary, rest :: binary >>, %{enable_string: false}), do: { binary, rest }
   defp do_unpack(<< 0xDB, len :: 32-unsigned-integer-unit(1), binary :: size(len)-binary, rest :: binary >>, %{enable_string: false}), do: { binary, rest }
 
